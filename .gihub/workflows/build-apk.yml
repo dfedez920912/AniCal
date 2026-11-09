@@ -1,0 +1,96 @@
+name: Build and publish APK
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-36" \
+            "platforms;android-36-ext1" \
+            "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Configure release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Required secret ANDROID_KEYSTORE_BASE64 is not configured."
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload-keystore.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/upload-keystore.jks" >> "$GITHUB_ENV"
+
+      - name: Run unit tests and build signed release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$STORE_PASSWORD" || { echo "Required secret STORE_PASSWORD is not configured."; exit 1; }
+          test -n "$KEY_PASSWORD" || { echo "Required secret KEY_PASSWORD is not configured."; exit 1; }
+          ./gradlew --no-daemon testDebugUnitTest assembleRelease
+
+      - name: Prepare release assets
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          cp "$APK" "AniCal-${RELEASE_TAG}.apk"
+          sha256sum "AniCal-${RELEASE_TAG}.apk" > "AniCal-${RELEASE_TAG}.apk.sha256"
+          {
+            echo "## AniCal ${RELEASE_TAG}"
+            echo
+            echo "**Commit incluido:** [\`${RELEASE_COMMIT}\`](${SERVER_URL}/${REPOSITORY}/commit/${RELEASE_COMMIT})"
+            echo
+            echo "APK firmado generado automáticamente por GitHub Actions."
+            echo
+            echo "Checksum SHA-256 incluido como archivo adjunto."
+          } > release-notes.md
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: AniCal ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: |
+            AniCal-${{ github.ref_name }}.apk
+            AniCal-${{ github.ref_name }}.apk.sha256
