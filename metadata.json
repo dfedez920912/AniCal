@@ -1,0 +1,6 @@
+{
+  "name": "AniCal",
+  "description": "Calendario y estrenos diarios y semanales de episodios de anime con sinopsis y carátulas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

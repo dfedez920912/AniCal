@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:initialKeyguardLayout="@layout/widget_anime_countdown"
+    android:initialLayout="@layout/widget_anime_countdown"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="200dp"
+    android:minResizeHeight="80dp"
+    android:previewImage="@mipmap/ic_launcher"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />
