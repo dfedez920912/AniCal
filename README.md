@@ -104,4 +104,6 @@ El manifiesto declara acceso a Internet y al estado de conectividad, notificacio
 
 ## Licencia
 
-No se identificó un archivo de licencia en la raíz al documentar este README. Antes de redistribuir o reutilizar el código, consulta al autor y añade aquí la licencia que corresponda.
+Este proyecto se distribuye bajo la licencia GNU General Public License v2 (GPL-2.0). Puedes consultar el texto completo en [`LICENSE`](./LICENSE).
+
+La GPL v2 garantiza que el software siga siendo libre y que cualquier modificación o redistribución se realice con los mismos derechos de acceso al código fuente y a la licencia. Antes de redistribuir versiones derivadas, asegúrate de mantener la licencia y las notas de copyright correspondientes.
