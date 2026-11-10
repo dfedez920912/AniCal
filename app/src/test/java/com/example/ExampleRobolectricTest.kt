@@ -243,4 +243,24 @@ class ExampleRobolectricTest {
     assertTrue("Crunchyroll schedule should not be empty", crunchyReleases.isNotEmpty())
     assertTrue("Netflix schedule should not be empty", netflixReleases.isNotEmpty())
   }
+
+  @Test
+  fun `test WorkManager episode reminder scheduling`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val schedule = OfflineAnimeData.getCuratedWeekSchedule(LocalDate.now())
+    val anime = schedule.first()
+
+    // Test enqueueing WorkManager reminder does not fail
+    com.example.notifications.AnimeEpisodeReminderWorker.scheduleReminderWithWorkManager(
+      context = context,
+      anime = anime,
+      minutesBefore = 15
+    )
+
+    // Test cancelling WorkManager reminder does not fail
+    com.example.notifications.AnimeEpisodeReminderWorker.cancelReminderWithWorkManager(
+      context = context,
+      animeId = anime.id
+    )
+  }
 }

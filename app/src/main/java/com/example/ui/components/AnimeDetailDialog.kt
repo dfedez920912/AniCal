@@ -42,6 +42,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -85,6 +86,8 @@ fun AnimeDetailDialog(
     onUpdateReminder: (enabled: Boolean, minutesBefore: Int) -> Unit = { _, _ -> },
     onTestNotification: () -> Unit = {},
     onToggleWatched: () -> Unit = {},
+    watchedEpisodeKeys: Set<String> = emptySet(),
+    onToggleWatchedEpisodeNum: (episodeNumber: Int) -> Unit = {},
     zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
     modifier: Modifier = Modifier
 ) {
@@ -390,6 +393,138 @@ fun AnimeDetailDialog(
                                 value = anime.format,
                                 modifier = Modifier.weight(1f)
                             )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Visual Progress Tracker & Episode List
+                        val totalEpCount = anime.totalEpisodes ?: anime.episode.coerceAtLeast(12)
+                        val watchedCountForAnime = (1..totalEpCount).count { epNum ->
+                            watchedEpisodeKeys.contains("${anime.id}_$epNum") || (epNum == anime.episode && anime.isWatched)
+                        }
+                        val progressFraction = if (totalEpCount > 0) watchedCountForAnime.toFloat() / totalEpCount.toFloat() else 0f
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("episode_progress_section")
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color(0xFF00E676),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Text(
+                                            text = "Progreso de Episodios",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    Text(
+                                        text = "$watchedCountForAnime / $totalEpCount vistos (${(progressFraction * 100).toInt()}%)",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (progressFraction >= 1f) Color(0xFF00E676) else MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                LinearProgressIndicator(
+                                    progress = { progressFraction },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(8.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    color = Color(0xFF00E676),
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(
+                                    text = "Toca cada episodio para marcarlo o desmarcarlo como visto:",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    (1..totalEpCount).forEach { epNum ->
+                                        val isCurrentAiringEp = epNum == anime.episode
+                                        val isEpWatched = watchedEpisodeKeys.contains("${anime.id}_$epNum") || (isCurrentAiringEp && anime.isWatched)
+
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = when {
+                                                isEpWatched -> Color(0xFF00E676).copy(alpha = 0.2f)
+                                                isCurrentAiringEp -> MaterialTheme.colorScheme.primaryContainer
+                                                else -> MaterialTheme.colorScheme.surface
+                                            },
+                                            border = androidx.compose.foundation.BorderStroke(
+                                                width = 1.dp,
+                                                color = when {
+                                                    isEpWatched -> Color(0xFF00E676)
+                                                    isCurrentAiringEp -> MaterialTheme.colorScheme.primary
+                                                    else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                                }
+                                            ),
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    if (isCurrentAiringEp) {
+                                                        onToggleWatched()
+                                                    } else {
+                                                        onToggleWatchedEpisodeNum(epNum)
+                                                    }
+                                                }
+                                                .testTag("episode_chip_$epNum")
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isEpWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                                    contentDescription = "Episodio $epNum",
+                                                    tint = if (isEpWatched) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                                Text(
+                                                    text = "Ep $epNum" + if (isCurrentAiringEp) " (Hoy)" else "",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = if (isEpWatched || isCurrentAiringEp) FontWeight.Bold else FontWeight.Medium,
+                                                    color = when {
+                                                        isEpWatched -> Color(0xFF00E676)
+                                                        isCurrentAiringEp -> MaterialTheme.colorScheme.primary
+                                                        else -> MaterialTheme.colorScheme.onSurface
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))

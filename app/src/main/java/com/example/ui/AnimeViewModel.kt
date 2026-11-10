@@ -363,6 +363,18 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun toggleWatchedEpisodeNum(animeId: Int, episodeNumber: Int, animeTitle: String) {
+        viewModelScope.launch {
+            val isNowWatched = repository.toggleWatchedEpisode(animeId, episodeNumber)
+            val msg = if (isNowWatched) {
+                "✓ Episodio $episodeNumber de '$animeTitle' marcado como visto."
+            } else {
+                "Episodio $episodeNumber de '$animeTitle' desmarcado."
+            }
+            _notificationMessage.value = msg
+        }
+    }
+
     fun setPlatformFilter(platform: com.example.model.StreamingPlatform) {
         _selectedPlatform.value = platform
     }

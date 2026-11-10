@@ -971,6 +971,10 @@ fun AnimeScheduleScreen(
                     viewModel.testEpisodeNotification(anime)
                 },
                 onToggleWatched = { viewModel.toggleWatchedEpisode(anime) },
+                watchedEpisodeKeys = uiState.watchedEpisodeKeys,
+                onToggleWatchedEpisodeNum = { epNum ->
+                    viewModel.toggleWatchedEpisodeNum(anime.id, epNum, anime.displayTitle)
+                },
                 zoneId = activeZone
             )
         }

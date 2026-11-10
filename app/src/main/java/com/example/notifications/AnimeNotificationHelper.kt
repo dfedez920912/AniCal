@@ -82,6 +82,7 @@ object AnimeNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Schedule via AlarmManager
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
@@ -109,6 +110,13 @@ object AnimeNotificationHelper {
             Log.w("AnimeNotificationHelper", "Exact alarm permission denied, fallback to set: ${e.message}")
             alarmManager.set(AlarmManager.RTC_WAKEUP, targetMillis, pendingIntent)
         }
+
+        // Also schedule via WorkManager as guaranteed persistent worker
+        try {
+            AnimeEpisodeReminderWorker.scheduleReminderWithWorkManager(context, anime, minutesBefore)
+        } catch (e: Exception) {
+            Log.w("AnimeNotificationHelper", "WorkManager schedule exception: ${e.message}")
+        }
     }
 
     fun cancelAnimeReminder(context: Context, animeId: Int) {
@@ -121,6 +129,13 @@ object AnimeNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(pendingIntent)
+
+        // Cancel WorkManager task as well
+        try {
+            AnimeEpisodeReminderWorker.cancelReminderWithWorkManager(context, animeId)
+        } catch (e: Exception) {
+            Log.w("AnimeNotificationHelper", "WorkManager cancel exception: ${e.message}")
+        }
     }
 
     fun showImmediateNotification(
