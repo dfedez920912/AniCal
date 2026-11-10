@@ -18,7 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.MyApplication">
@@ -31,12 +31,12 @@
 
         <!-- BroadcastReceiver for anime episode release alerts -->
         <receiver
-            android:name=".notifications.AnimeReminderReceiver"
+            android:name="com.example.notifications.AnimeReminderReceiver"
             android:exported="false" />
 
         <!-- Home Screen Anime Countdown Widget -->
         <receiver
-            android:name=".widget.AnimeCountdownWidget"
+            android:name="com.example.widget.AnimeCountdownWidget"
             android:exported="true"
             android:label="AniCal - Próximo Estreno">
             <intent-filter>
