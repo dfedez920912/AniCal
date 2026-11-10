@@ -62,7 +62,7 @@ jobs:
           set -euo pipefail
           test -n "$STORE_PASSWORD" || { echo "Required secret STORE_PASSWORD is not configured."; exit 1; }
           test -n "$KEY_PASSWORD" || { echo "Required secret KEY_PASSWORD is not configured."; exit 1; }
-          ./gradlew --no-daemon testDebugUnitTest assembleRelease
+          bash ./gradlew --no-daemon testDebugUnitTest assembleRelease
 
       - name: Prepare release assets
         env:
