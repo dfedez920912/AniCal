@@ -1,17 +1,11 @@
-## Novedades de la versión
+## Novedades de la Versión (v1.1.2)
 
-### 🚀 Nuevas Funcionalidades
-- **Caché sin conexión con Room**: Implementada la persistencia local en Room para consultar detalles de animes previamente cargados y la lista de seguimiento (Watchlist) sin necesidad de una conexión activa a internet.
-- **Sistema de calificación de 5 estrellas**: Añadido un componente interactivo de 5 estrellas en el diálogo de detalles de cada anime para puntuar los títulos y guardar las calificaciones permanentemente en la base de datos Room.
-
-### 🎨 Mejoras de Interfaz (UI/UX)
-- **Filtros avanzados colapsables**: Se optimizó el espacio vertical de la pantalla principal haciendo que los selectores de géneros, plataformas de streaming, filtros de episodios y ordenamiento sean desplegables ("Filtros avanzados y géneros"), maximizando el área visible para los animes.
-- **Doble variante para el Widget**: El widget de la pantalla de inicio ahora incluye una versión compacta (muestra la cantidad de estrenos del día) y una versión extendida (con detalles del próximo estreno), eliminando por completo los errores de visualización en blanco.
-- **Localización de zonas horarias**: Se reemplazaron las etiquetas ambiguas `"LOCA"` y `"JST"` por los indicadores claros en español `"Local"` y `"Japón"`, mejorando la consistencia idiomática en todo el dispositivo.
-
-### 🛠️ Correcciones de Errores (Bug Fixes)
-- **Estabilidad al iniciar (Crash fix)**: Se corrigió el error de cierre inesperado al abrir la aplicación (`ClassNotFoundException`) ajustando las rutas de los componentes en el manifiesto (`AndroidManifest.xml`) de acuerdo con el paquete principal.
+- **Traducción íntegra de sinopsis**: Se actualizó el servicio de traducción para asegurar que todo el texto de la sinopsis sea traducido completamente al español al pulsar el botón de cambio de idioma, eliminando segmentos rezagados en inglés.
+- **Reorganización de botones de acción en detalle de anime**: Los botones de Favorito y Watchlist se colocaron en su propia fila superior exclusiva para evitar deformaciones, acompañados por las acciones de Visto, Calendario y Compartir.
+- **Scroll dedicado para progreso de episodios**: Contenedor desplazable de altura máxima (`160.dp`) para animes con 100+ capítulos.
+- **Pantalla de Onboarding y Splash Screen**: Tutorial de bienvenida e inicio animado.
+- **Filtros avanzados colapsables y barra de búsqueda con lupa**: Máximo espacio vertical en la pantalla principal.
 
 ## Descargas
 
-El APK firmado y su checksum SHA-256 están adjuntos a este release.
+El APK firmado y su checksum SHA-256 están adjuntos y firmados para este release.

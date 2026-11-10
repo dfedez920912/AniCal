@@ -111,6 +111,14 @@ fun AnimeScheduleScreen(
     var isSortMenuExpanded by remember { mutableStateOf(false) }
     var isThemeDialogVisible by remember { mutableStateOf(false) }
     var isFiltersExpanded by remember { mutableStateOf(false) }
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+        if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 25) {
+            isFiltersExpanded = false
+        }
+    }
 
     // Runtime permission launcher for Android 13+ (POST_NOTIFICATIONS)
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -237,6 +245,18 @@ fun AnimeScheduleScreen(
                         }
                     }
 
+                    // Search toggle button (magnifying glass)
+                    IconButton(
+                        onClick = { isSearchExpanded = !isSearchExpanded },
+                        modifier = Modifier.testTag("search_toggle_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Buscar anime",
+                            tint = if (isSearchExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
                     // Refresh schedule
                     IconButton(
                         onClick = { viewModel.loadSchedule(isRefresh = true) },
@@ -298,132 +318,164 @@ fun AnimeScheduleScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Prominent Search Bar at the Top of the Anime List Screen
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("anime_search_bar_container")
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            // Expandable Search Bar with smooth AnimatedVisibility transition
+            AnimatedVisibility(visible = isSearchExpanded) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 2.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("anime_search_bar_container")
                 ) {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = { viewModel.setSearchQuery(it) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("anime_search_bar"),
-                        placeholder = {
-                            Text(
-                                text = "Buscar anime por título (ej. Solo Leveling, Bleach)...",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Icono de búsqueda",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        trailingIcon = {
-                            if (uiState.searchQuery.isNotEmpty()) {
-                                IconButton(
-                                    onClick = {
-                                        viewModel.setSearchQuery("")
-                                        focusManager.clearFocus()
-                                    },
-                                    modifier = Modifier.testTag("clear_search_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = "Borrar búsqueda",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-                        )
-                    )
-
-                    // Quick suggestion chips when not searching, or active search summary when searching
-                    if (uiState.searchQuery.isBlank()) {
-                        Row(
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = uiState.searchQuery,
+                            onValueChange = { viewModel.setSearchQuery(it) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = "Sugerencias:",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                            )
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                contentPadding = PaddingValues(horizontal = 2.dp)
-                            ) {
-                                val suggestions = listOf("Solo Leveling", "Bleach", "One Piece", "Dandadan", "Blue Lock", "Re:Zero")
-                                items(suggestions) { item ->
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier
-                                            .clickable { viewModel.setSearchQuery(item) }
+                                .testTag("anime_search_bar"),
+                            placeholder = {
+                                Text(
+                                    text = "Buscar anime por título...",
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Icono de búsqueda",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            trailingIcon = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (uiState.searchQuery.isNotEmpty()) {
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.setSearchQuery("")
+                                                focusManager.clearFocus()
+                                            },
+                                            modifier = Modifier.testTag("clear_search_button")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Clear,
+                                                contentDescription = "Borrar búsqueda",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    IconButton(
+                                        onClick = { isSearchExpanded = false },
+                                        modifier = Modifier.testTag("close_search_button")
                                     ) {
-                                        Text(
-                                            text = item,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Cerrar búsqueda",
+                                            tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
-                            }
-                        }
-                    } else {
-                        // Active search feedback banner
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 6.dp, start = 4.dp, end = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Resultados para \"${uiState.searchQuery}\" (${uiState.filteredReleases.size} encontrados en la biblioteca)",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
                             )
+                        )
 
-                            Text(
-                                text = "Limpiar",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.secondary,
+                        // Quick suggestion chips when not searching, or active search summary when searching
+                        if (uiState.searchQuery.isBlank()) {
+                            Row(
                                 modifier = Modifier
-                                    .clickable {
-                                        viewModel.setSearchQuery("")
-                                        focusManager.clearFocus()
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Sugerencias:",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp)
+                                ) {
+                                    val suggestions = listOf("Solo Leveling", "Bleach", "One Piece", "Dandadan", "Blue Lock")
+                                    items(suggestions) { item ->
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                            modifier = Modifier
+                                                .clickable { viewModel.setSearchQuery(item) }
+                                        ) {
+                                            Text(
+                                                text = item,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                            )
+                                        }
                                     }
-                                    .padding(2.dp)
-                            )
+                                }
+                            }
+                        } else {
+                            // Active search feedback banner (non-wrapping)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp, start = 4.dp, end = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Resultados para \"${uiState.searchQuery}\"",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        modifier = Modifier
+                                            .clickable {
+                                                viewModel.setSearchQuery("")
+                                                focusManager.clearFocus()
+                                            }
+                                    ) {
+                                        Text(
+                                            text = "Limpiar",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "${uiState.filteredReleases.size} animes encontrados",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
                         }
                     }
                 }

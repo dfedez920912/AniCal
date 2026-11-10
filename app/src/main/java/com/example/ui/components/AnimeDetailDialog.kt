@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -113,8 +115,8 @@ fun AnimeDetailDialog(
     ) {
         Card(
             modifier = modifier
-                .fillMaxWidth(0.94f)
-                .height(670.dp)
+                .fillMaxWidth(0.96f)
+                .fillMaxHeight(0.90f)
                 .clip(RoundedCornerShape(28.dp))
                 .testTag("anime_detail_dialog"),
             shape = RoundedCornerShape(28.dp),
@@ -564,62 +566,69 @@ fun AnimeDetailDialog(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                FlowRow(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 160.dp)
+                                        .verticalScroll(rememberScrollState())
                                 ) {
-                                    (1..totalEpCount).forEach { epNum ->
-                                        val isCurrentAiringEp = epNum == anime.episode
-                                        val isEpWatched = watchedEpisodeKeys.contains("${anime.id}_$epNum") || (isCurrentAiringEp && anime.isWatched)
+                                    FlowRow(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        (1..totalEpCount).forEach { epNum ->
+                                            val isCurrentAiringEp = epNum == anime.episode
+                                            val isEpWatched = watchedEpisodeKeys.contains("${anime.id}_$epNum") || (isCurrentAiringEp && anime.isWatched)
 
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = when {
-                                                isEpWatched -> Color(0xFF00E676).copy(alpha = 0.2f)
-                                                isCurrentAiringEp -> MaterialTheme.colorScheme.primaryContainer
-                                                else -> MaterialTheme.colorScheme.surface
-                                            },
-                                            border = androidx.compose.foundation.BorderStroke(
-                                                width = 1.dp,
+                                            Surface(
+                                                shape = RoundedCornerShape(8.dp),
                                                 color = when {
-                                                    isEpWatched -> Color(0xFF00E676)
-                                                    isCurrentAiringEp -> MaterialTheme.colorScheme.primary
-                                                    else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                                }
-                                            ),
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable {
-                                                    if (isCurrentAiringEp) {
-                                                        onToggleWatched()
-                                                    } else {
-                                                        onToggleWatchedEpisodeNum(epNum)
-                                                    }
-                                                }
-                                                .testTag("episode_chip_$epNum")
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (isEpWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                                                    contentDescription = "Episodio $epNum",
-                                                    tint = if (isEpWatched) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                                    modifier = Modifier.size(13.dp)
-                                                )
-                                                Text(
-                                                    text = "Ep $epNum" + if (isCurrentAiringEp) " (Hoy)" else "",
-                                                    fontSize = 11.sp,
-                                                    fontWeight = if (isEpWatched || isCurrentAiringEp) FontWeight.Bold else FontWeight.Medium,
+                                                    isEpWatched -> Color(0xFF00E676).copy(alpha = 0.2f)
+                                                    isCurrentAiringEp -> MaterialTheme.colorScheme.primaryContainer
+                                                    else -> MaterialTheme.colorScheme.surface
+                                                },
+                                                border = androidx.compose.foundation.BorderStroke(
+                                                    width = 1.dp,
                                                     color = when {
                                                         isEpWatched -> Color(0xFF00E676)
                                                         isCurrentAiringEp -> MaterialTheme.colorScheme.primary
-                                                        else -> MaterialTheme.colorScheme.onSurface
+                                                        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                                     }
-                                                )
+                                                ),
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clickable {
+                                                        if (isCurrentAiringEp) {
+                                                            onToggleWatched()
+                                                        } else {
+                                                            onToggleWatchedEpisodeNum(epNum)
+                                                        }
+                                                    }
+                                                    .testTag("episode_chip_$epNum")
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (isEpWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                                        contentDescription = "Episodio $epNum",
+                                                        tint = if (isEpWatched) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                                        modifier = Modifier.size(13.dp)
+                                                    )
+                                                    Text(
+                                                        text = "Ep $epNum" + if (isCurrentAiringEp) " (Hoy)" else "",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = if (isEpWatched || isCurrentAiringEp) FontWeight.Bold else FontWeight.Medium,
+                                                        color = when {
+                                                            isEpWatched -> Color(0xFF00E676)
+                                                            isCurrentAiringEp -> MaterialTheme.colorScheme.primary
+                                                            else -> MaterialTheme.colorScheme.onSurface
+                                                        }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -738,151 +747,173 @@ fun AnimeDetailDialog(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Action Buttons: Favorite + Watchlist + Watched + Calendar + Share
-                        Row(
+                        // Action Buttons: Row 1 (Favorite, Watchlist) & Row 2 (Watched, Calendar, Share)
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Button(
-                                onClick = onFavoriteToggle,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("detail_fav_btn"),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (anime.isFavorite) AniSecondary else MaterialTheme.colorScheme.primary
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = if (anime.isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (anime.isFavorite) "Favorito" else "+ Fav",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Button(
+                                    onClick = onFavoriteToggle,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("detail_fav_btn"),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (anime.isFavorite) AniSecondary else MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = if (anime.isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (anime.isFavorite) "Favorito" else "+ Favorito",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                // Watchlist Button
+                                OutlinedButton(
+                                    onClick = onToggleWatchlist,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("detail_watchlist_btn"),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = if (anime.isInWatchlist) AniSecondary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = if (anime.isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (anime.isInWatchlist) AniSecondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (anime.isInWatchlist) "Watchlist" else "+ Watchlist",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
 
-                            // Watchlist Button
-                            OutlinedButton(
-                                onClick = onToggleWatchlist,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("detail_watchlist_btn"),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = if (anime.isInWatchlist) AniSecondary else MaterialTheme.colorScheme.onSurface
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = if (anime.isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = if (anime.isInWatchlist) AniSecondary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (anime.isInWatchlist) "En Watchlist" else "+ Watchlist",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
+                                // Watched Checkbox Button
+                                OutlinedButton(
+                                    onClick = onToggleWatched,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("detail_watched_btn"),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = if (anime.isWatched) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = if (anime.isWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                        contentDescription = "Visto",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (anime.isWatched) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (anime.isWatched) "Visto" else "Marcar Visto",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
 
-                            // Watched Checkbox Button
-                            OutlinedButton(
-                                onClick = onToggleWatched,
-                                modifier = Modifier
-                                    .testTag("detail_watched_btn"),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = if (anime.isWatched) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = if (anime.isWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                                    contentDescription = "Visto",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = if (anime.isWatched) Color(0xFF00E676) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (anime.isWatched) "Visto" else "Marcar Visto",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-
-                            // Export to Calendar (Google Calendar / Native Calendar)
-                            OutlinedButton(
-                                onClick = {
-                                    val startMillis = anime.airingAtSeconds * 1000
-                                    val endMillis = startMillis + (25 * 60 * 1000) // 25 min episode
-                                    val calIntent = Intent(Intent.ACTION_EDIT).apply {
-                                        type = "vnd.android.cursor.item/event"
-                                        putExtra("beginTime", startMillis)
-                                        putExtra("endTime", endMillis)
-                                        putExtra("allDay", false)
-                                        putExtra("title", "Estreno: ${anime.displayTitle} Ep ${anime.episode}")
-                                        putExtra("description", "Emisión en ${anime.streamingPlatform}. ${anime.getActiveSynopsis().take(120)}...")
-                                        putExtra("eventLocation", anime.streamingPlatform)
-                                    }
-                                    try {
-                                        context.startActivity(calIntent)
-                                    } catch (e: Exception) {
-                                        val sendIntent = Intent(Intent.ACTION_INSERT).apply {
-                                            data = android.provider.CalendarContract.Events.CONTENT_URI
-                                            putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, startMillis)
-                                            putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, endMillis)
-                                            putExtra(android.provider.CalendarContract.Events.TITLE, "Estreno: ${anime.displayTitle} Ep ${anime.episode}")
-                                            putExtra(android.provider.CalendarContract.Events.DESCRIPTION, "Emisión en ${anime.streamingPlatform}")
+                                // Export to Calendar (Google Calendar / Native Calendar)
+                                OutlinedButton(
+                                    onClick = {
+                                        val startMillis = anime.airingAtSeconds * 1000
+                                        val endMillis = startMillis + (25 * 60 * 1000) // 25 min episode
+                                        val calIntent = Intent(Intent.ACTION_EDIT).apply {
+                                            type = "vnd.android.cursor.item/event"
+                                            putExtra("beginTime", startMillis)
+                                            putExtra("endTime", endMillis)
+                                            putExtra("allDay", false)
+                                            putExtra("title", "Estreno: ${anime.displayTitle} Ep ${anime.episode}")
+                                            putExtra("description", "Emisión en ${anime.streamingPlatform}. ${anime.getActiveSynopsis().take(120)}...")
+                                            putExtra("eventLocation", anime.streamingPlatform)
                                         }
-                                        context.startActivity(sendIntent)
-                                    }
-                                },
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .testTag("detail_calendar_btn"),
-                                shape = RoundedCornerShape(12.dp),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = "Añadir a Calendario",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                                        try {
+                                            context.startActivity(calIntent)
+                                        } catch (e: Exception) {
+                                            val sendIntent = Intent(Intent.ACTION_INSERT).apply {
+                                                data = android.provider.CalendarContract.Events.CONTENT_URI
+                                                putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, startMillis)
+                                                putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, endMillis)
+                                                putExtra(android.provider.CalendarContract.Events.TITLE, "Estreno: ${anime.displayTitle} Ep ${anime.episode}")
+                                                putExtra(android.provider.CalendarContract.Events.DESCRIPTION, "Emisión en ${anime.streamingPlatform}")
+                                            }
+                                            context.startActivity(sendIntent)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("detail_calendar_btn"),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarMonth,
+                                        contentDescription = "Añadir a Calendario",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Calendario",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
 
-                            // Share Button
-                            OutlinedButton(
-                                onClick = {
-                                    val sendIntent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(
-                                            Intent.EXTRA_TEXT,
-                                            "¡El episodio ${anime.episode} de ${anime.displayTitle} estrena el $dayName a las $formattedTime en ${anime.streamingPlatform}!\n\nCalendario de Anime AniCal"
-                                        )
-                                        type = "text/plain"
-                                    }
-                                    val shareIntent = Intent.createChooser(sendIntent, "Compartir estreno")
-                                    context.startActivity(shareIntent)
-                                },
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .testTag("detail_share_btn"),
-                                shape = RoundedCornerShape(12.dp),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = "Compartir",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                // Share Button
+                                OutlinedButton(
+                                    onClick = {
+                                        val sendIntent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(
+                                                Intent.EXTRA_TEXT,
+                                                "¡El episodio ${anime.episode} de ${anime.displayTitle} estrena el $dayName a las $formattedTime en ${anime.streamingPlatform}!\n\nCalendario de Anime AniCal"
+                                            )
+                                            type = "text/plain"
+                                        }
+                                        val shareIntent = Intent.createChooser(sendIntent, "Compartir estreno")
+                                        context.startActivity(shareIntent)
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("detail_share_btn"),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Compartir",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Compartir",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
                         }
 
