@@ -14,15 +14,10 @@ import androidx.annotation.RequiresApi
 import com.example.MainActivity
 import cu.daniel.anical.R
 import com.example.data.OfflineAnimeData
-import com.example.data.local.AppDatabase
-import com.example.model.AnimeRelease
-import com.example.model.CountdownStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.format.TextStyle
-import java.util.Locale
 
 @SuppressLint("NewApi")
 class AnimeCountdownWidget : AppWidgetProvider() {
@@ -75,83 +70,30 @@ class AnimeCountdownWidget : AppWidgetProvider() {
                     val layoutId = if (isSmall) R.layout.widget_anime_countdown_small else R.layout.widget_anime_countdown
                     val views = RemoteViews(context.packageName, layoutId)
 
-                    val db = AppDatabase.getDatabase(context)
-                    val favoriteIds = db.favoriteAnimeDao().getFavoriteIdsList().toSet()
-
                     val today = LocalDate.now()
-                    val weekSchedule = OfflineAnimeData.getCuratedWeekSchedule(today)
-                    val nowSeconds = System.currentTimeMillis() / 1000
+                    val weekSchedule = try {
+                        OfflineAnimeData.getCuratedWeekSchedule(today)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                    val todayReleases = weekSchedule.filter { it.getAiringLocalDate() == today }
 
                     if (isSmall) {
-                        val todayCount = weekSchedule.count { it.getAiringLocalDate() == today }
-                        views.setTextViewText(
-                            R.id.widget_small_count_text,
-                            "$todayCount animes para estrenar hoy"
-                        )
+                        val countText = todayReleases.size.toString()
+                        views.setTextViewText(R.id.widget_small_count_text, countText)
                     } else {
-                        // Find closest episode among favorites, or fallback to closest upcoming episode
-                        val favoriteReleases = weekSchedule.filter { favoriteIds.contains(it.id) }
-
-                        val nextAnime: AnimeRelease? = if (favoriteReleases.isNotEmpty()) {
-                            val upcoming = favoriteReleases.filter { it.airingAtSeconds >= nowSeconds - 3600 }
-                                .minByOrNull { it.airingAtSeconds }
-                            upcoming ?: favoriteReleases.first()
+                        if (todayReleases.isNotEmpty()) {
+                            val listBuilder = StringBuilder()
+                            todayReleases.take(5).forEach { anime ->
+                                val time = anime.getFormattedTime()
+                                listBuilder.append("• ${anime.displayTitle} (Ep ${anime.episode}) - $time\n")
+                            }
+                            if (todayReleases.size > 5) {
+                                listBuilder.append("... y ${todayReleases.size - 5} más")
+                            }
+                            views.setTextViewText(R.id.widget_anime_list_text, listBuilder.toString().trimEnd())
                         } else {
-                            val upcoming = weekSchedule.filter { it.airingAtSeconds >= nowSeconds - 3600 }
-                                .minByOrNull { it.airingAtSeconds }
-                            upcoming ?: weekSchedule.firstOrNull()
-                        }
-
-                        if (nextAnime != null) {
-                            val isFavorite = favoriteIds.contains(nextAnime.id)
-                            val formattedTime = nextAnime.getFormattedTime()
-                            val localDate = nextAnime.getAiringLocalDate()
-                            val dayName = when {
-                                localDate == today -> "Hoy"
-                                localDate == today.plusDays(1) -> "Mañana"
-                                else -> localDate.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("es"))
-                                    .replaceFirstChar { it.uppercase() }
-                            }
-
-                            val diff = nextAnime.airingAtSeconds - nowSeconds
-                            val countdownString = when {
-                                diff < -3600 -> "Emitido hoy"
-                                diff <= 0 -> "¡Estrenando ahora!"
-                                diff < 3600 -> "⏳ En ${(diff / 60).coerceAtLeast(1)}m"
-                                diff < 86400 -> {
-                                    val h = diff / 3600
-                                    val m = (diff % 3600) / 60
-                                    "⏳ En ${h}h ${m}m"
-                                }
-                                else -> "⏳ En ${diff / 86400} días"
-                            }
-
-                            val statusLabel = when (nextAnime.getCountdownStatus()) {
-                                is CountdownStatus.AiringNow -> "¡En emisión!"
-                                is CountdownStatus.Aired -> "Emitido"
-                                is CountdownStatus.Upcoming -> if (nextAnime.isSeriesPremiere) "Gran Estreno" else "Próximo estreno"
-                            }
-
-                            views.setTextViewText(R.id.widget_anime_title, nextAnime.displayTitle)
-                            views.setTextViewText(
-                                R.id.widget_anime_episode_time,
-                                "Episodio ${nextAnime.episode} • $dayName a las $formattedTime"
-                            )
-                            views.setTextViewText(R.id.widget_countdown_text, countdownString)
-                            views.setTextViewText(R.id.widget_status_text, statusLabel)
-
-                            if (isFavorite) {
-                                views.setTextViewText(R.id.widget_favorite_tag, "⭐ Favorito en seguimiento")
-                                views.setTextColor(R.id.widget_favorite_tag, 0xFFFFB800.toInt())
-                            } else {
-                                views.setTextViewText(R.id.widget_favorite_tag, "Toca para seguir tus animes favoritos")
-                                views.setTextColor(R.id.widget_favorite_tag, 0xFFA5A3C2.toInt())
-                            }
-                        } else {
-                            views.setTextViewText(R.id.widget_anime_title, "AniCal - Calendario Anime")
-                            views.setTextViewText(R.id.widget_anime_episode_time, "Abre la app para consultar los estrenos")
-                            views.setTextViewText(R.id.widget_countdown_text, "AniCal")
-                            views.setTextViewText(R.id.widget_favorite_tag, "Sin estrenos próximos")
+                            views.setTextViewText(R.id.widget_anime_list_text, "• No hay estrenos programados para hoy")
                         }
                     }
 

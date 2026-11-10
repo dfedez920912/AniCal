@@ -34,18 +34,37 @@
             android:name="com.example.notifications.AnimeReminderReceiver"
             android:exported="false" />
 
-        <!-- Home Screen Anime Countdown Widget -->
+        <!-- 3x2 Scrollable List Anime Widget -->
         <receiver
-            android:name="com.example.widget.AnimeCountdownWidget"
+            android:name="com.example.widget.AnimeListWidgetProvider"
             android:exported="true"
-            android:label="AniCal - Próximo Estreno">
+            android:label="AniCal - Estrenos de Hoy (3x2)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/anime_countdown_widget_info" />
+                android:resource="@xml/anime_list_widget_info" />
         </receiver>
+
+        <!-- 1x1 Count Anime Widget -->
+        <receiver
+            android:name="com.example.widget.AnimeCountWidgetProvider"
+            android:exported="true"
+            android:label="AniCal - Contador de Estrenos (1x1)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/anime_count_widget_info" />
+        </receiver>
+
+        <!-- RemoteViewsService for scrollable 3x2 list widget -->
+        <service
+            android:name="com.example.widget.AnimeListWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
     </application>
 
 </manifest>

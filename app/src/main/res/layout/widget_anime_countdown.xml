@@ -27,7 +27,7 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:letterSpacing="0.05"
-            android:text="ANICAL • PRÓXIMO ESTRENO"
+            android:text="ANICAL • ESTRENOS DE HOY"
             android:textColor="#A5A3C2"
             android:textSize="10sp"
             android:textStyle="bold" />
@@ -36,7 +36,7 @@
             android:id="@+id/widget_refresh_button"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:background="?android:attr/selectableItemBackground"
+            android:background="@android:color/transparent"
             android:contentDescription="Actualizar widget"
             android:padding="2dp"
             android:src="@android:drawable/ic_menu_rotate" />
@@ -45,90 +45,21 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="6dp"
         android:background="#2E2B52" />
 
-    <!-- Content Row -->
-    <LinearLayout
+    <!-- List of anime premiering today -->
+    <TextView
+        android:id="@+id/widget_anime_list_text"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <!-- Left info -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_anime_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Solo Leveling Season 2"
-                android:textColor="#F1F1F8"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_anime_episode_time"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Episodio 8 • Hoy a las 17:30"
-                android:textColor="#A5A3C2"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/widget_favorite_tag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="⭐ Anime Favorito en seguimiento"
-                android:textColor="#FFB800"
-                android:textSize="10sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Right countdown box -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/widget_countdown_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/widget_badge_background"
-                android:paddingStart="10dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="5dp"
-                android:text="⏳ En 1h 45m"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_status_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:text="Estreno próximo"
-                android:textColor="#6F6D8A"
-                android:textSize="9sp" />
-        </LinearLayout>
-
-    </LinearLayout>
+        android:ellipsize="end"
+        android:gravity="top"
+        android:maxLines="5"
+        android:text="• Cargando estrenos..."
+        android:textColor="#F1F1F8"
+        android:textSize="12sp" />
 
 </LinearLayout>

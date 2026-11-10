@@ -5,29 +5,27 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="10dp"
+    android:padding="12dp"
     android:gravity="center">
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ANICAL • ESTRENOS HOY"
+        android:text="Estrenos hoy"
         android:textColor="#A5A3C2"
-        android:textSize="9sp"
+        android:textSize="10sp"
         android:textStyle="bold"
         android:gravity="center" />
 
     <TextView
         android:id="@+id/widget_small_count_text"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Animes para estrenar hoy"
+        android:layout_marginTop="2dp"
+        android:text="0"
         android:textColor="#FFFFFF"
-        android:textSize="13sp"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:gravity="center"
-        android:maxLines="2"
-        android:ellipsize="end" />
+        android:gravity="center" />
 
 </LinearLayout>
