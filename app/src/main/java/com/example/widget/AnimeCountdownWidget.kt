@@ -9,7 +9,7 @@ import android.content.Intent
 import android.util.Log
 import android.widget.RemoteViews
 import com.example.MainActivity
-import com.example.R
+import cu.daniel.anical.R
 import com.example.data.OfflineAnimeData
 import com.example.data.local.AppDatabase
 import com.example.model.AnimeRelease

@@ -11,6 +11,7 @@ import com.example.model.AnimeSortOrder
 import com.example.model.GenreHelper
 import com.example.model.SynopsisLanguage
 import com.example.notifications.AnimeNotificationHelper
+import cu.daniel.anical.R
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
