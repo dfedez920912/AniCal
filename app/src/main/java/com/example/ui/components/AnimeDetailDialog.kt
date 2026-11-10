@@ -86,6 +86,7 @@ fun AnimeDetailDialog(
     onUpdateReminder: (enabled: Boolean, minutesBefore: Int) -> Unit = { _, _ -> },
     onTestNotification: () -> Unit = {},
     onToggleWatched: () -> Unit = {},
+    onToggleWatchlist: () -> Unit = {},
     watchedEpisodeKeys: Set<String> = emptySet(),
     onToggleWatchedEpisodeNum: (episodeNumber: Int) -> Unit = {},
     zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
@@ -638,7 +639,7 @@ fun AnimeDetailDialog(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Action Buttons: Favorite + Watched + Calendar + Share
+                        // Action Buttons: Favorite + Watchlist + Watched + Calendar + Share
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -657,13 +658,38 @@ fun AnimeDetailDialog(
                                 Icon(
                                     imageVector = if (anime.isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = if (anime.isFavorite) "Favorito" else "+ Favorito",
-                                    fontSize = 12.sp,
+                                    text = if (anime.isFavorite) "Favorito" else "+ Fav",
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Watchlist Button
+                            OutlinedButton(
+                                onClick = onToggleWatchlist,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("detail_watchlist_btn"),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = if (anime.isInWatchlist) AniSecondary else MaterialTheme.colorScheme.onSurface
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = if (anime.isInWatchlist) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (anime.isInWatchlist) AniSecondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (anime.isInWatchlist) "En Watchlist" else "+ Watchlist",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
 

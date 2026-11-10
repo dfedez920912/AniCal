@@ -25,10 +25,15 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
@@ -52,6 +57,8 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -96,6 +103,7 @@ fun AnimeScheduleScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var isSortMenuExpanded by remember { mutableStateOf(false) }
@@ -238,6 +246,47 @@ fun AnimeScheduleScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
+                NavigationBarItem(
+                    selected = uiState.currentNavScreen == MainNavScreen.SCHEDULE,
+                    onClick = { viewModel.setNavScreen(MainNavScreen.SCHEDULE) },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = "Calendario"
+                        )
+                    },
+                    label = { Text("Calendario", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.testTag("nav_schedule_tab")
+                )
+                NavigationBarItem(
+                    selected = uiState.currentNavScreen == MainNavScreen.WATCHLIST,
+                    onClick = { viewModel.setNavScreen(MainNavScreen.WATCHLIST) },
+                    icon = {
+                        BadgedBox(
+                            badge = {
+                                if (uiState.watchlistCount > 0) {
+                                    Badge(containerColor = AniSecondary) {
+                                        Text("${uiState.watchlistCount}")
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bookmark,
+                                contentDescription = "Mi Watchlist"
+                            )
+                        }
+                    },
+                    label = { Text("Mi Watchlist", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.testTag("nav_watchlist_tab")
+                )
+            }
         }
     ) { innerPadding ->
         Column(
@@ -280,7 +329,10 @@ fun AnimeScheduleScreen(
                         trailingIcon = {
                             if (uiState.searchQuery.isNotEmpty()) {
                                 IconButton(
-                                    onClick = { viewModel.setSearchQuery("") },
+                                    onClick = {
+                                        viewModel.setSearchQuery("")
+                                        focusManager.clearFocus()
+                                    },
                                     modifier = Modifier.testTag("clear_search_button")
                                 ) {
                                     Icon(
@@ -292,6 +344,8 @@ fun AnimeScheduleScreen(
                             }
                         },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
@@ -301,8 +355,46 @@ fun AnimeScheduleScreen(
                         )
                     )
 
-                    // Active search feedback banner
-                    if (uiState.searchQuery.isNotBlank()) {
+                    // Quick suggestion chips when not searching, or active search summary when searching
+                    if (uiState.searchQuery.isBlank()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Sugerencias:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            )
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                contentPadding = PaddingValues(horizontal = 2.dp)
+                            ) {
+                                val suggestions = listOf("Solo Leveling", "Bleach", "One Piece", "Dandadan", "Blue Lock", "Re:Zero")
+                                items(suggestions) { item ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier
+                                            .clickable { viewModel.setSearchQuery(item) }
+                                    ) {
+                                        Text(
+                                            text = item,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Active search feedback banner
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -311,7 +403,7 @@ fun AnimeScheduleScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Resultados para \"${uiState.searchQuery}\" (${uiState.filteredReleases.size} encontrados en la semana)",
+                                text = "Resultados para \"${uiState.searchQuery}\" (${uiState.filteredReleases.size} encontrados en la biblioteca)",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -323,7 +415,10 @@ fun AnimeScheduleScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier
-                                    .clickable { viewModel.setSearchQuery("") }
+                                    .clickable {
+                                        viewModel.setSearchQuery("")
+                                        focusManager.clearFocus()
+                                    }
                                     .padding(2.dp)
                             )
                         }
@@ -971,6 +1066,7 @@ fun AnimeScheduleScreen(
                     viewModel.testEpisodeNotification(anime)
                 },
                 onToggleWatched = { viewModel.toggleWatchedEpisode(anime) },
+                onToggleWatchlist = { viewModel.toggleWatchlist(anime) },
                 watchedEpisodeKeys = uiState.watchedEpisodeKeys,
                 onToggleWatchedEpisodeNum = { epNum ->
                     viewModel.toggleWatchedEpisodeNum(anime.id, epNum, anime.displayTitle)

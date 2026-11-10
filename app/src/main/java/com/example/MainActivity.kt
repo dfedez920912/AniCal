@@ -11,6 +11,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.example.ui.AnimeScheduleScreen
 import com.example.ui.AnimeViewModel
+import com.example.ui.MainNavScreen
+import com.example.ui.WatchlistScreen
 import com.example.ui.theme.AniCalTheme
 
 class MainActivity : ComponentActivity() {
@@ -24,7 +26,10 @@ class MainActivity : ComponentActivity() {
             val uiState = viewModel.uiState.collectAsState()
             AniCalTheme(themeMode = uiState.value.appThemeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    AnimeScheduleScreen(viewModel = viewModel)
+                    when (uiState.value.currentNavScreen) {
+                        MainNavScreen.SCHEDULE -> AnimeScheduleScreen(viewModel = viewModel)
+                        MainNavScreen.WATCHLIST -> WatchlistScreen(viewModel = viewModel)
+                    }
                 }
             }
         }

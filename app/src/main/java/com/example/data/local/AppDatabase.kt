@@ -5,11 +5,16 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [FavoriteAnimeEntity::class, WatchedEpisodeEntity::class], version = 3, exportSchema = false)
+@Database(
+    entities = [FavoriteAnimeEntity::class, WatchedEpisodeEntity::class, WatchlistEntity::class],
+    version = 4,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun favoriteAnimeDao(): FavoriteAnimeDao
     abstract fun watchedEpisodeDao(): WatchedEpisodeDao
+    abstract fun watchlistDao(): WatchlistDao
 
     companion object {
         @Volatile

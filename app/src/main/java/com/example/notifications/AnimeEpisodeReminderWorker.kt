@@ -78,6 +78,9 @@ class AnimeEpisodeReminderWorker(
             val delayMillis = if (triggerTimeMillis <= nowMillis) {
                 if (anime.airingAtSeconds * 1000 > nowMillis) {
                     3000L // Episode is airing very soon (within notification window)
+                } else if (nowMillis - (anime.airingAtSeconds * 1000) < 15 * 60 * 1000) {
+                    // Newly released in the last 15 minutes
+                    1500L
                 } else {
                     return // Episode has already aired
                 }
@@ -97,6 +100,7 @@ class AnimeEpisodeReminderWorker(
                 .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
                 .setInputData(inputData)
                 .addTag(getWorkTag(anime.id))
+                .addTag("anime_episode_reminder")
                 .build()
 
             val uniqueWorkName = "anime_reminder_${anime.id}"
@@ -107,6 +111,26 @@ class AnimeEpisodeReminderWorker(
             )
 
             Log.d(TAG, "Enqueued WorkManager reminder for ${anime.displayTitle} with delay ${delayMillis}ms")
+        }
+
+        fun scheduleImmediateTest(context: Context, anime: AnimeRelease) {
+            val workManager = getWorkManagerSafe(context) ?: return
+            val inputData = Data.Builder()
+                .putInt(KEY_ANIME_ID, anime.id)
+                .putString(KEY_ANIME_TITLE, anime.displayTitle)
+                .putInt(KEY_EPISODE, anime.episode)
+                .putString(KEY_AIRING_TIME, anime.getFormattedTime())
+                .putInt(KEY_MINUTES_BEFORE, 0)
+                .build()
+
+            val workRequest = OneTimeWorkRequestBuilder<AnimeEpisodeReminderWorker>()
+                .setInitialDelay(1500, TimeUnit.MILLISECONDS)
+                .setInputData(inputData)
+                .addTag("anime_immediate_test")
+                .build()
+
+            workManager.enqueue(workRequest)
+            Log.d(TAG, "Enqueued immediate test WorkManager notification for ${anime.displayTitle}")
         }
 
         fun cancelReminderWithWorkManager(context: Context, animeId: Int) {

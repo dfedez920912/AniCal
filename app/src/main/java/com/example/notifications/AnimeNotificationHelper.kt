@@ -31,13 +31,20 @@ object AnimeNotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
-                description = "Notificaciones locales para alertar antes de la emisión de episodios de tus animes favoritos"
+                description = "Notificaciones locales para alertar cuando se estrena un episodio de tus animes favoritos"
                 enableVibration(true)
                 setShowBadge(true)
             }
             val notificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+        }
+
+        // Initialize WorkManager periodic background sync
+        try {
+            FavoriteAnimeSyncWorker.enqueuePeriodicSync(context)
+        } catch (e: Exception) {
+            Log.w("AnimeNotificationHelper", "Could not enqueue periodic sync: ${e.message}")
         }
     }
 
@@ -48,6 +55,15 @@ object AnimeNotificationHelper {
     ) {
         createNotificationChannel(context)
 
+        // Primary: WorkManager guaranteed background scheduling
+        try {
+            AnimeEpisodeReminderWorker.scheduleReminderWithWorkManager(context, anime, minutesBefore)
+            Log.d("AnimeNotificationHelper", "WorkManager reminder enqueued for ${anime.displayTitle}")
+        } catch (e: Exception) {
+            Log.w("AnimeNotificationHelper", "WorkManager schedule exception: ${e.message}")
+        }
+
+        // Secondary: AlarmManager exact alarm fallback
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
         val triggerTimeMillis = (anime.airingAtSeconds * 1000) - (minutesBefore * 60 * 1000)
@@ -55,12 +71,12 @@ object AnimeNotificationHelper {
 
         // If the episode is in the future, schedule the alarm. If it's very soon (e.g. today within window), schedule for immediate/soon.
         val targetMillis = if (triggerTimeMillis <= nowMillis) {
-            // If already within the window or past, notify in 10 seconds for user demonstration if not aired yet
             if (anime.airingAtSeconds * 1000 > nowMillis) {
                 nowMillis + 5000
+            } else if (nowMillis - (anime.airingAtSeconds * 1000) < 15 * 60 * 1000) {
+                nowMillis + 2000
             } else {
-                // Already aired
-                return
+                return // Already aired
             }
         } else {
             triggerTimeMillis
@@ -110,18 +126,21 @@ object AnimeNotificationHelper {
             Log.w("AnimeNotificationHelper", "Exact alarm permission denied, fallback to set: ${e.message}")
             alarmManager.set(AlarmManager.RTC_WAKEUP, targetMillis, pendingIntent)
         }
-
-        // Also schedule via WorkManager as guaranteed persistent worker
-        try {
-            AnimeEpisodeReminderWorker.scheduleReminderWithWorkManager(context, anime, minutesBefore)
-        } catch (e: Exception) {
-            Log.w("AnimeNotificationHelper", "WorkManager schedule exception: ${e.message}")
-        }
     }
 
     fun cancelAnimeReminder(context: Context, animeId: Int) {
+        // Cancel WorkManager task
+        try {
+            AnimeEpisodeReminderWorker.cancelReminderWithWorkManager(context, animeId)
+        } catch (e: Exception) {
+            Log.w("AnimeNotificationHelper", "WorkManager cancel exception: ${e.message}")
+        }
+
+        // Cancel AlarmManager
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val intent = Intent(context, AnimeReminderReceiver::class.java)
+        val intent = Intent(context, AnimeReminderReceiver::class.java).apply {
+            `package` = context.packageName
+        }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             animeId,
@@ -129,13 +148,6 @@ object AnimeNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         alarmManager.cancel(pendingIntent)
-
-        // Cancel WorkManager task as well
-        try {
-            AnimeEpisodeReminderWorker.cancelReminderWithWorkManager(context, animeId)
-        } catch (e: Exception) {
-            Log.w("AnimeNotificationHelper", "WorkManager cancel exception: ${e.message}")
-        }
     }
 
     fun showImmediateNotification(
@@ -168,11 +180,16 @@ object AnimeNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notificationTitle = "¡Próximo estreno: $animeTitle!"
-        val notificationText = if (minutesBefore > 0) {
-            "El episodio $episode se emitirá a las $airingTime (en $minutesBefore minutos). ¡Prepárate para verlo!"
+        val notificationTitle = if (minutesBefore <= 0) {
+            "¡Nuevo episodio disponible: $animeTitle!"
         } else {
-            "¡El episodio $episode se está estrenando ahora a las $airingTime!"
+            "¡Próximo estreno: $animeTitle!"
+        }
+
+        val notificationText = if (minutesBefore <= 0) {
+            "El episodio $episode de '$animeTitle' ya se ha emitido ($airingTime). ¡Disponible para ver ahora!"
+        } else {
+            "El episodio $episode se emitirá a las $airingTime (en $minutesBefore minutos). ¡Prepárate para verlo!"
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)

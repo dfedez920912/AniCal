@@ -39,6 +39,7 @@ data class AnimeRelease(
     val streamingPlatform: String = "Crunchyroll",
     val isFavorite: Boolean = false,
     val isWatched: Boolean = false,
+    val isInWatchlist: Boolean = false,
     val hasReminder: Boolean = false,
     val reminderMinutesBefore: Int = 15
 ) {

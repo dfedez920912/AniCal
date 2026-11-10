@@ -21,6 +21,11 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
+enum class MainNavScreen(val title: String) {
+    SCHEDULE("Calendario"),
+    WATCHLIST("Mi Watchlist")
+}
+
 data class AnimeUiState(
     val allReleases: List<AnimeRelease> = emptyList(),
     val filteredReleases: List<AnimeRelease> = emptyList(),
@@ -49,7 +54,14 @@ data class AnimeUiState(
     val favoritesCount: Int = 0,
     val watchedCount: Int = 0,
     val todayPremieresCount: Int = 0,
-    val todayOngoingCount: Int = 0
+    val todayOngoingCount: Int = 0,
+    val currentNavScreen: MainNavScreen = MainNavScreen.SCHEDULE,
+    val watchlistItems: List<com.example.data.local.WatchlistEntity> = emptyList(),
+    val filteredWatchlistItems: List<com.example.data.local.WatchlistEntity> = emptyList(),
+    val watchlistIds: Set<Int> = emptySet(),
+    val watchlistFilterStatus: com.example.data.local.WatchlistStatus? = null,
+    val watchlistSearchQuery: String = "",
+    val watchlistCount: Int = 0
 )
 
 class AnimeViewModel(application: Application) : AndroidViewModel(application) {
@@ -76,6 +88,19 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
     private val _errorMessage = MutableStateFlow<String?>(null)
     private val _notificationMessage = MutableStateFlow<String?>(null)
     private val _selectedAnimeForDetail = MutableStateFlow<AnimeRelease?>(null)
+    private val _watchlistItems = MutableStateFlow<List<com.example.data.local.WatchlistEntity>>(emptyList())
+    private val _watchlistIds = MutableStateFlow<Set<Int>>(emptySet())
+    private val _currentNavScreen = MutableStateFlow(MainNavScreen.SCHEDULE)
+    private val _watchlistFilterStatus = MutableStateFlow<com.example.data.local.WatchlistStatus?>(null)
+    private val _watchlistSearchQuery = MutableStateFlow("")
+
+    private data class WatchlistParams(
+        val items: List<com.example.data.local.WatchlistEntity>,
+        val ids: Set<Int>,
+        val screen: MainNavScreen,
+        val filter: com.example.data.local.WatchlistStatus?,
+        val query: String
+    )
 
     private data class FilterParams(
         val raw: List<AnimeRelease>,
@@ -165,14 +190,26 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    private val watchlistParamsFlow = combine(
+        _watchlistItems,
+        _watchlistIds,
+        _currentNavScreen,
+        _watchlistFilterStatus,
+        _watchlistSearchQuery
+    ) { items, ids, screen, filter, query ->
+        WatchlistParams(items, ids, screen, filter, query)
+    }
+
     val uiState: StateFlow<AnimeUiState> = combine(
         filterParamsFlow,
         finalControlFlow,
-        _selectedAnimeForDetail
-    ) { filterParams, controlParams, detail ->
+        _selectedAnimeForDetail,
+        watchlistParamsFlow
+    ) { filterParams, controlParams, detail, watchlistParams ->
         val raw = filterParams.raw
         val favIds = filterParams.favIds
         val watchedKeys = filterParams.watchedKeys
+        val watchIds = watchlistParams.ids
         val selDate = filterParams.selDate
         val query = filterParams.query
         val selGenres = filterParams.selGenres
@@ -193,11 +230,12 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
         val activeZone = if (isJpZone) java.time.ZoneId.of("Asia/Tokyo") else java.time.ZoneId.systemDefault()
         val today = LocalDate.now(activeZone)
 
-        // Sync favorite and watched status with Room database
+        // Sync favorite, watched, and watchlist status with Room database
         val syncedRaw = raw.map { item ->
             val isFav = favIds.contains(item.id)
             val isW = watchedKeys.contains("${item.id}_${item.episode}")
-            item.copy(isFavorite = isFav, isWatched = isW, hasReminder = isFav)
+            val isWatch = watchIds.contains(item.id)
+            item.copy(isFavorite = isFav, isWatched = isW, isInWatchlist = isWatch, hasReminder = isFav)
         }
 
         // Build 7-day tabs with counts for premieres and ongoing episodes
@@ -241,7 +279,8 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
             val matchesQuery = query.isBlank() ||
                     item.titleRomaji.contains(query, ignoreCase = true) ||
                     (item.titleEnglish?.contains(query, ignoreCase = true) == true) ||
-                    (item.studio?.contains(query, ignoreCase = true) == true)
+                    (item.studio?.contains(query, ignoreCase = true) == true) ||
+                    item.genres.any { it.contains(query, ignoreCase = true) }
             val matchesGenre = GenreHelper.matchesAnyGenre(item.genres, selGenres)
             val matchesFav = !onlyFavs || item.isFavorite
             val matchesPlatform = platform == com.example.model.StreamingPlatform.ALL ||
@@ -297,7 +336,20 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
         val syncedDetail = detail?.let { d ->
             val isFav = favIds.contains(d.id)
             val isW = watchedKeys.contains("${d.id}_${d.episode}")
-            d.copy(isFavorite = isFav, isWatched = isW, hasReminder = isFav)
+            val isWatch = watchIds.contains(d.id)
+            d.copy(isFavorite = isFav, isWatched = isW, isInWatchlist = isWatch, hasReminder = isFav)
+        }
+
+        // Filter watchlist items by status and search query
+        val filteredWatchlist = watchlistParams.items.filter { item ->
+            val matchesStatus = watchlistParams.filter == null || item.status == watchlistParams.filter.name
+            val q = watchlistParams.query.trim()
+            val matchesQuery = q.isEmpty() ||
+                    item.titleRomaji.contains(q, ignoreCase = true) ||
+                    (item.titleEnglish?.contains(q, ignoreCase = true) == true) ||
+                    (item.studio?.contains(q, ignoreCase = true) == true) ||
+                    item.genres.contains(q, ignoreCase = true)
+            matchesStatus && matchesQuery
         }
 
         AnimeUiState(
@@ -328,7 +380,14 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
             favoritesCount = favCount,
             watchedCount = watchedCount,
             todayPremieresCount = dayPremieres,
-            todayOngoingCount = dayOngoing
+            todayOngoingCount = dayOngoing,
+            currentNavScreen = watchlistParams.screen,
+            watchlistItems = watchlistParams.items,
+            filteredWatchlistItems = filteredWatchlist,
+            watchlistIds = watchlistParams.ids,
+            watchlistFilterStatus = watchlistParams.filter,
+            watchlistSearchQuery = watchlistParams.query,
+            watchlistCount = watchlistParams.items.size
         )
     }.stateIn(
         viewModelScope,
@@ -341,6 +400,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.favoriteIdsFlow.collect { ids ->
                 _favoriteIds.value = ids
+                scheduleRemindersForFavorites(_rawReleases.value, ids)
             }
         }
         viewModelScope.launch {
@@ -348,7 +408,64 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
                 _watchedKeys.value = keys
             }
         }
+        viewModelScope.launch {
+            repository.allWatchlistFlow.collect { list ->
+                _watchlistItems.value = list
+            }
+        }
+        viewModelScope.launch {
+            repository.watchlistIdsFlow.collect { ids ->
+                _watchlistIds.value = ids
+            }
+        }
         loadSchedule()
+    }
+
+    fun setNavScreen(screen: MainNavScreen) {
+        _currentNavScreen.value = screen
+    }
+
+    fun setWatchlistFilter(status: com.example.data.local.WatchlistStatus?) {
+        _watchlistFilterStatus.value = status
+    }
+
+    fun setWatchlistSearchQuery(query: String) {
+        _watchlistSearchQuery.value = query
+    }
+
+    fun toggleWatchlist(
+        anime: AnimeRelease,
+        status: com.example.data.local.WatchlistStatus = com.example.data.local.WatchlistStatus.PLAN_TO_WATCH
+    ) {
+        viewModelScope.launch {
+            val wasAdded = repository.toggleWatchlist(anime, status)
+            val msg = if (wasAdded) {
+                "✓ '${anime.displayTitle}' guardado en tu Watchlist (${status.displayName})."
+            } else {
+                "'${anime.displayTitle}' eliminado de tu Watchlist."
+            }
+            _notificationMessage.value = msg
+        }
+    }
+
+    fun updateWatchlistStatus(animeId: Int, status: com.example.data.local.WatchlistStatus) {
+        viewModelScope.launch {
+            repository.updateWatchlistStatus(animeId, status)
+            _notificationMessage.value = "Estado de Watchlist: '${status.displayName}'"
+        }
+    }
+
+    fun updateWatchlistEpisodes(animeId: Int, episodes: Int) {
+        viewModelScope.launch {
+            repository.updateWatchlistEpisodes(animeId, episodes)
+        }
+    }
+
+    fun removeFromWatchlist(animeId: Int) {
+        viewModelScope.launch {
+            repository.removeFromWatchlist(animeId)
+            _notificationMessage.value = "Anime eliminado de tu Watchlist"
+        }
     }
 
     fun toggleWatchedEpisode(anime: AnimeRelease) {
@@ -403,12 +520,24 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
             val result = repository.getSchedule(LocalDate.now(), 7)
             result.onSuccess { releases ->
                 _rawReleases.value = releases
+                scheduleRemindersForFavorites(releases, _favoriteIds.value)
             }.onFailure { ex ->
                 _errorMessage.value = "No se pudo actualizar el calendario: ${ex.message}"
             }
 
             _isLoading.value = false
             _isRefreshing.value = false
+        }
+    }
+
+    private fun scheduleRemindersForFavorites(releases: List<AnimeRelease>, favIds: Set<Int>) {
+        if (favIds.isEmpty() || releases.isEmpty()) return
+        val context = getApplication<Application>().applicationContext
+        val nowMillis = System.currentTimeMillis()
+        releases.filter { favIds.contains(it.id) }.forEach { anime ->
+            if (anime.airingAtSeconds * 1000 > nowMillis - (15 * 60 * 1000)) {
+                AnimeNotificationHelper.scheduleAnimeReminder(context, anime, anime.reminderMinutesBefore)
+            }
         }
     }
 
@@ -457,7 +586,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
                 ?: return@launch
             val wasAdded = repository.toggleFavorite(anime)
             if (wasAdded) {
-                _notificationMessage.value = "¡${anime.displayTitle} añadido a favoritos! Se activó recordatorio."
+                _notificationMessage.value = "¡${anime.displayTitle} añadido a favoritos! Notificación con WorkManager programada."
             }
         }
     }
@@ -471,16 +600,19 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
             repository.updateReminder(updated, enabled, minutesBefore)
             updateAnimeInState(animeId) { it.copy(hasReminder = enabled, reminderMinutesBefore = minutesBefore) }
             _notificationMessage.value = if (enabled) {
-                "Recordatorio configurado ($minutesBefore min antes de la emisión)"
+                "Notificación WorkManager: $minutesBefore min antes de la emisión de '${anime.displayTitle}'"
             } else {
-                "Recordatorio desactivado"
+                "Recordatorio desactivado para '${anime.displayTitle}'"
             }
         }
     }
 
     fun testEpisodeNotification(anime: AnimeRelease) {
+        val context = getApplication<Application>().applicationContext
+        // Execute direct notification and enqueue via WorkManager
         repository.sendTestNotification(anime, anime.reminderMinutesBefore)
-        _notificationMessage.value = "Notificación de prueba enviada para ${anime.displayTitle}"
+        com.example.notifications.AnimeEpisodeReminderWorker.scheduleImmediateTest(context, anime)
+        _notificationMessage.value = "Notificación de WorkManager enviada para ${anime.displayTitle}"
     }
 
     fun clearNotificationMessage() {

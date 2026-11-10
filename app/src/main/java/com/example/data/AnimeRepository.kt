@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit
 class AnimeRepository(
     private val context: Context,
     private val favoriteAnimeDao: FavoriteAnimeDao = AppDatabase.getDatabase(context).favoriteAnimeDao(),
-    private val watchedEpisodeDao: com.example.data.local.WatchedEpisodeDao = AppDatabase.getDatabase(context).watchedEpisodeDao()
+    private val watchedEpisodeDao: com.example.data.local.WatchedEpisodeDao = AppDatabase.getDatabase(context).watchedEpisodeDao(),
+    private val watchlistDao: com.example.data.local.WatchlistDao = AppDatabase.getDatabase(context).watchlistDao()
 ) {
 
     private val translationService = TranslationService()
@@ -50,6 +51,56 @@ class AnimeRepository(
      */
     val watchedEpisodeKeysFlow: Flow<Set<String>> = watchedEpisodeDao.getAllWatchedKeysFlow()
         .map { list -> list.toSet() }
+
+    /**
+     * Reactive stream of all Watchlist entries in Room.
+     */
+    val allWatchlistFlow: Flow<List<com.example.data.local.WatchlistEntity>> = watchlistDao.getAllWatchlist()
+
+    /**
+     * Reactive stream of anime IDs in the user's Watchlist.
+     */
+    val watchlistIdsFlow: Flow<Set<Int>> = watchlistDao.getWatchlistIdsFlow()
+        .map { list -> list.toSet() }
+
+    suspend fun getWatchlistIds(): Set<Int> = withContext(Dispatchers.IO) {
+        watchlistDao.getWatchlistIdsList().toSet()
+    }
+
+    suspend fun toggleWatchlist(
+        anime: AnimeRelease,
+        status: com.example.data.local.WatchlistStatus = com.example.data.local.WatchlistStatus.PLAN_TO_WATCH
+    ): Boolean = withContext(Dispatchers.IO) {
+        val exists = watchlistDao.isInWatchlistDirect(anime.id)
+        if (exists) {
+            watchlistDao.deleteFromWatchlist(anime.id)
+            false
+        } else {
+            watchlistDao.insertWatchlist(
+                com.example.data.local.WatchlistEntity.fromAnimeRelease(
+                    anime = anime,
+                    status = status
+                )
+            )
+            true
+        }
+    }
+
+    suspend fun updateWatchlistStatus(animeId: Int, status: com.example.data.local.WatchlistStatus) = withContext(Dispatchers.IO) {
+        watchlistDao.updateStatus(animeId, status.name)
+    }
+
+    suspend fun updateWatchlistEpisodes(animeId: Int, episodes: Int) = withContext(Dispatchers.IO) {
+        watchlistDao.updateWatchedEpisodes(animeId, episodes)
+    }
+
+    suspend fun removeFromWatchlist(animeId: Int) = withContext(Dispatchers.IO) {
+        watchlistDao.deleteFromWatchlist(animeId)
+    }
+
+    suspend fun isInWatchlist(animeId: Int): Boolean = withContext(Dispatchers.IO) {
+        watchlistDao.isInWatchlistDirect(animeId)
+    }
 
     suspend fun getWatchedEpisodeKeys(): Set<String> = withContext(Dispatchers.IO) {
         watchedEpisodeDao.getAllWatchedKeysList().toSet()

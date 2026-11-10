@@ -257,10 +257,47 @@ class ExampleRobolectricTest {
       minutesBefore = 15
     )
 
+    // Test enqueueing WorkManager immediate test notification
+    com.example.notifications.AnimeEpisodeReminderWorker.scheduleImmediateTest(
+      context = context,
+      anime = anime
+    )
+
     // Test cancelling WorkManager reminder does not fail
     com.example.notifications.AnimeEpisodeReminderWorker.cancelReminderWithWorkManager(
       context = context,
       animeId = anime.id
     )
+
+    // Test FavoriteAnimeSyncWorker periodic sync enqueue
+    com.example.notifications.FavoriteAnimeSyncWorker.enqueuePeriodicSync(context)
+  }
+
+  @Test
+  fun `test Watchlist Room database persistence and status transitions`() = runBlocking {
+    val schedule = OfflineAnimeData.getCuratedWeekSchedule(LocalDate.now())
+    val anime = schedule.first()
+
+    // Initially not in watchlist
+    assertFalse(repository.isInWatchlist(anime.id))
+
+    // Toggle watchlist -> should add
+    val added = repository.toggleWatchlist(anime, com.example.data.local.WatchlistStatus.PLAN_TO_WATCH)
+    assertTrue("Should be added to watchlist", added)
+    assertTrue("Should exist in watchlist", repository.isInWatchlist(anime.id))
+
+    val watchlistIds = repository.getWatchlistIds()
+    assertTrue(watchlistIds.contains(anime.id))
+
+    // Update status to WATCHING
+    repository.updateWatchlistStatus(anime.id, com.example.data.local.WatchlistStatus.WATCHING)
+
+    // Update watched episodes
+    repository.updateWatchlistEpisodes(anime.id, 5)
+
+    // Toggle watchlist again -> should remove
+    val removed = repository.toggleWatchlist(anime)
+    assertFalse("Should be removed from watchlist", removed)
+    assertFalse("Should not exist in watchlist", repository.isInWatchlist(anime.id))
   }
 }
