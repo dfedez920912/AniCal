@@ -41,7 +41,8 @@ data class AnimeRelease(
     val isWatched: Boolean = false,
     val isInWatchlist: Boolean = false,
     val hasReminder: Boolean = false,
-    val reminderMinutesBefore: Int = 15
+    val reminderMinutesBefore: Int = 15,
+    val userRating: Int = 0
 ) {
     val displayTitle: String
         get() = if (!titleEnglish.isNullOrBlank()) titleEnglish else titleRomaji

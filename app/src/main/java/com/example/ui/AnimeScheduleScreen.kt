@@ -1,5 +1,6 @@
 package com.example.ui
 
+import android.annotation.SuppressLint
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -96,6 +97,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
+@SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeScheduleScreen(
@@ -108,6 +110,7 @@ fun AnimeScheduleScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var isSortMenuExpanded by remember { mutableStateOf(false) }
     var isThemeDialogVisible by remember { mutableStateOf(false) }
+    var isFiltersExpanded by remember { mutableStateOf(false) }
 
     // Runtime permission launcher for Android 13+ (POST_NOTIFICATIONS)
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -191,7 +194,7 @@ fun AnimeScheduleScreen(
                             color = if (uiState.isJapanTimeZone) AniSecondary else MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                text = if (uiState.isJapanTimeZone) "JST" else "LOCAL",
+                                text = if (uiState.isJapanTimeZone) "Japón" else "Local",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = if (uiState.isJapanTimeZone) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.primary,
@@ -433,212 +436,265 @@ fun AnimeScheduleScreen(
                 onDateSelected = { date -> viewModel.selectDate(date) }
             )
 
-            // Episode Type Filter: All vs Episodios del Día vs Nuevos Estrenos
-            Row(
+            // Collapsible Filters Toggle Bar
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable { isFiltersExpanded = !isFiltersExpanded },
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(8.dp)
             ) {
-                EpisodeFilter.values().forEach { filter ->
-                    val isSelected = uiState.episodeFilter == filter
-                    val count = when (filter) {
-                        EpisodeFilter.ALL -> uiState.todayPremieresCount + uiState.todayOngoingCount
-                        EpisodeFilter.ONGOING_EPISODES -> uiState.todayOngoingCount
-                        EpisodeFilter.PREMIERES -> uiState.todayPremieresCount
-                    }
-
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { viewModel.setEpisodeFilter(filter) },
-                        label = {
-                            Text(
-                                text = "${filter.shortLabel} ($count)",
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = if (filter == EpisodeFilter.PREMIERES) AniSecondary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = if (filter == EpisodeFilter.PREMIERES) AniSecondary else MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.testTag("filter_chip_${filter.name.lowercase()}")
-                    )
-                }
-            }
-
-            // Genre & Sort Control Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Categorize by Genre toggle button
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (uiState.isCategorizedByGenre) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier
-                        .clickable { viewModel.toggleCategorizedByGenre() }
-                        .testTag("toggle_categorized_btn")
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Category,
+                            imageVector = Icons.Default.FilterList,
                             contentDescription = null,
-                            tint = if (uiState.isCategorizedByGenre) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = if (uiState.isCategorizedByGenre) "Por Géneros: ON" else "Categorizar",
-                            fontSize = 11.sp,
+                            text = if (isFiltersExpanded) "Ocultar filtros avanzados ▴" else "Filtros avanzados y géneros ▾",
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (uiState.isCategorizedByGenre) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
-                }
 
-                // Sort Dropdown Button
-                Box {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier
-                            .clickable { isSortMenuExpanded = true }
-                            .testTag("sort_menu_btn")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    if (uiState.selectedGenres.isNotEmpty() || uiState.selectedPlatform != com.example.model.StreamingPlatform.ALL || uiState.episodeFilter != EpisodeFilter.ALL) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = AniSecondary
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Sort,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(14.dp)
-                            )
                             Text(
-                                text = "Orden: ${uiState.sortOrder.shortLabel}",
-                                fontSize = 11.sp,
+                                text = "Filtro activo",
+                                fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = androidx.compose.ui.graphics.Color.White,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                             )
                         }
                     }
+                }
+            }
 
-                    DropdownMenu(
-                        expanded = isSortMenuExpanded,
-                        onDismissRequest = { isSortMenuExpanded = false }
+            AnimatedVisibility(visible = isFiltersExpanded) {
+                Column {
+                    // Episode Type Filter: All vs Episodios del Día vs Nuevos Estrenos
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        AnimeSortOrder.values().forEach { order ->
-                            DropdownMenuItem(
-                                text = {
+                        EpisodeFilter.values().forEach { filter ->
+                            val isSelected = uiState.episodeFilter == filter
+                            val count = when (filter) {
+                                EpisodeFilter.ALL -> uiState.todayPremieresCount + uiState.todayOngoingCount
+                                EpisodeFilter.ONGOING_EPISODES -> uiState.todayOngoingCount
+                                EpisodeFilter.PREMIERES -> uiState.todayPremieresCount
+                            }
+
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.setEpisodeFilter(filter) },
+                                label = {
                                     Text(
-                                        text = order.label,
-                                        fontWeight = if (uiState.sortOrder == order) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (uiState.sortOrder == order) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        text = "${filter.shortLabel} ($count)",
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                     )
                                 },
-                                onClick = {
-                                    viewModel.setSortOrder(order)
-                                    isSortMenuExpanded = false
-                                }
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = if (filter == EpisodeFilter.PREMIERES) AniSecondary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = if (filter == EpisodeFilter.PREMIERES) AniSecondary else MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.testTag("filter_chip_${filter.name.lowercase()}")
                             )
                         }
                     }
-                }
-            }
 
-            // Genre Filter Chips Horizontal Scroll
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("genres_filter_row"),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Clear all genres chip
-                item {
-                    val isAll = uiState.selectedGenres.isEmpty()
-                    FilterChip(
-                        selected = isAll,
-                        onClick = { viewModel.clearGenres() },
-                        label = { Text("Todos los géneros", fontSize = 11.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.testTag("genre_chip_all")
-                    )
-                }
+                    // Genre & Sort Control Bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Categorize by Genre toggle button
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (uiState.isCategorizedByGenre) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier
+                                .clickable { viewModel.toggleCategorizedByGenre() }
+                                .testTag("toggle_categorized_btn")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Category,
+                                    contentDescription = null,
+                                    tint = if (uiState.isCategorizedByGenre) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = if (uiState.isCategorizedByGenre) "Por Géneros: ON" else "Categorizar",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (uiState.isCategorizedByGenre) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
 
-                items(uiState.availableGenres) { genre ->
-                    val isSelected = uiState.selectedGenres.contains(genre)
-                    val count = uiState.genreCounts[genre] ?: 0
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { viewModel.toggleGenre(genre) },
-                        label = {
-                            Text(
-                                text = if (count > 0) "$genre ($count)" else genre,
-                                fontSize = 11.sp
+                        // Sort Dropdown Button
+                        Box {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier
+                                    .clickable { isSortMenuExpanded = true }
+                                    .testTag("sort_menu_btn")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Sort,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "Orden: ${uiState.sortOrder.shortLabel}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            DropdownMenu(
+                                expanded = isSortMenuExpanded,
+                                onDismissRequest = { isSortMenuExpanded = false }
+                            ) {
+                                AnimeSortOrder.values().forEach { order ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = order.label,
+                                                fontWeight = if (uiState.sortOrder == order) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (uiState.sortOrder == order) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        },
+                                        onClick = {
+                                            viewModel.setSortOrder(order)
+                                            isSortMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Genre Filter Chips Horizontal Scroll
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("genres_filter_row"),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Clear all genres chip
+                        item {
+                            val isAll = uiState.selectedGenres.isEmpty()
+                            FilterChip(
+                                selected = isAll,
+                                onClick = { viewModel.clearGenres() },
+                                label = { Text("Todos los géneros", fontSize = 11.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.testTag("genre_chip_all")
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.testTag("genre_chip_$genre")
-                    )
-                }
-            }
+                        }
 
-            // Streaming Platform Filter Chips Row (Crunchyroll, Netflix, Disney+, Prime Video)
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("platform_filter_row"),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    Text(
-                        text = "Dónde ver:",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(end = 4.dp, top = 8.dp)
-                    )
-                }
+                        items(uiState.availableGenres) { genre ->
+                            val isSelected = uiState.selectedGenres.contains(genre)
+                            val count = uiState.genreCounts[genre] ?: 0
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.toggleGenre(genre) },
+                                label = {
+                                    Text(
+                                        text = if (count > 0) "$genre ($count)" else genre,
+                                        fontSize = 11.sp
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.testTag("genre_chip_$genre")
+                            )
+                        }
+                    }
 
-                items(com.example.model.StreamingPlatform.values()) { platform ->
-                    val isSelected = uiState.selectedPlatform == platform
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { viewModel.setPlatformFilter(platform) },
-                        label = {
+                    // Streaming Platform Filter Chips Row (Crunchyroll, Netflix, Disney+, Prime Video)
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("platform_filter_row"),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
                             Text(
-                                text = platform.displayName,
+                                text = "Dónde ver:",
                                 fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 4.dp, top = 8.dp)
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.primary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.testTag("platform_chip_${platform.name}")
-                    )
+                        }
+
+                        items(com.example.model.StreamingPlatform.values()) { platform ->
+                            val isSelected = uiState.selectedPlatform == platform
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.setPlatformFilter(platform) },
+                                label = {
+                                    Text(
+                                        text = platform.displayName,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.testTag("platform_chip_${platform.name}")
+                            )
+                        }
+                    }
                 }
             }
 

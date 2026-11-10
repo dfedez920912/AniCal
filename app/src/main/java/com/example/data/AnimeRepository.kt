@@ -1,7 +1,9 @@
 package com.example.data
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.example.data.local.AppDatabase
 import com.example.data.local.FavoriteAnimeDao
 import com.example.data.local.FavoriteAnimeEntity
@@ -25,7 +27,9 @@ class AnimeRepository(
     private val context: Context,
     private val favoriteAnimeDao: FavoriteAnimeDao = AppDatabase.getDatabase(context).favoriteAnimeDao(),
     private val watchedEpisodeDao: com.example.data.local.WatchedEpisodeDao = AppDatabase.getDatabase(context).watchedEpisodeDao(),
-    private val watchlistDao: com.example.data.local.WatchlistDao = AppDatabase.getDatabase(context).watchlistDao()
+    private val watchlistDao: com.example.data.local.WatchlistDao = AppDatabase.getDatabase(context).watchlistDao(),
+    private val cachedAnimeDao: com.example.data.local.CachedAnimeDao = AppDatabase.getDatabase(context).cachedAnimeDao(),
+    private val userRatingDao: com.example.data.local.UserRatingDao = AppDatabase.getDatabase(context).userRatingDao()
 ) {
 
     private val translationService = TranslationService()
@@ -34,6 +38,26 @@ class AnimeRepository(
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
         .build()
+
+    /**
+     * Reactive stream of user ratings (animeId -> rating 1..5).
+     */
+    val userRatingsFlow: Flow<Map<Int, Int>> = userRatingDao.getAllRatingsFlow()
+        .map { list -> list.associate { it.animeId to it.rating } }
+
+    suspend fun setUserRating(animeId: Int, rating: Int) = withContext(Dispatchers.IO) {
+        if (rating <= 0) {
+            userRatingDao.deleteRating(animeId)
+        } else {
+            userRatingDao.insertOrUpdateRating(
+                com.example.data.local.UserRatingEntity(animeId = animeId, rating = rating.coerceIn(1, 5))
+            )
+        }
+    }
+
+    suspend fun getUserRating(animeId: Int): Int = withContext(Dispatchers.IO) {
+        userRatingDao.getRatingDirect(animeId) ?: 0
+    }
 
     /**
      * Reactive stream of favorite anime IDs persisted in Room.
@@ -179,9 +203,10 @@ class AnimeRepository(
     }
 
     /**
-     * Fetches airing schedule for the given date window [startDate..endDate].
-     * If the remote call fails or is empty, falls back gracefully to the curated offline schedule.
+     * Caches retrieved releases in Room database. If remote fetch fails (e.g. offline),
+     * falls back gracefully to Room cached data and curated offline schedule.
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getSchedule(
         startDate: LocalDate = LocalDate.now(),
         daysCount: Int = 7
@@ -192,34 +217,44 @@ class AnimeRepository(
 
         val favEntities = favoriteAnimeDao.getFavoriteIdsList().toSet()
         val watchedKeys = watchedEpisodeDao.getAllWatchedKeysList().toSet()
+        val userRatingsMap = userRatingDao.getAllRatingsList().associate { it.animeId to it.rating }
 
         try {
             val remoteReleases = fetchFromAniList(startEpoch, endEpoch, favEntities, watchedKeys)
             if (remoteReleases.isNotEmpty()) {
+                // Save to Room cache for offline access
+                cachedAnimeDao.insertAll(remoteReleases.map { com.example.data.local.CachedAnimeEntity.fromAnimeRelease(it) })
                 val curated = OfflineAnimeData.getCuratedWeekSchedule(startDate)
-                val combined = mergeReleases(remoteReleases, curated, favEntities, watchedKeys)
+                // Cache curated items as well so full offline experience is preserved
+                cachedAnimeDao.insertAll(curated.map { com.example.data.local.CachedAnimeEntity.fromAnimeRelease(it) })
+
+                val combined = mergeReleases(remoteReleases, curated, favEntities, watchedKeys, userRatingsMap)
                 return@withContext Result.success(combined)
             }
         } catch (e: Exception) {
-            Log.w("AnimeRepository", "AniList API fetch failed, using curated offline schedule: ${e.message}")
+            Log.w("AnimeRepository", "AniList API fetch failed (offline or network error), attempting Room cache fallback: ${e.message}")
         }
 
-        // Curated fallback
-        val curated = OfflineAnimeData.getCuratedWeekSchedule(startDate).map { release ->
-            val key = "${release.id}_${release.episode}"
-            release.copy(
-                isFavorite = favEntities.contains(release.id),
-                isWatched = watchedKeys.contains(key)
-            )
+        // Offline / Cache fallback
+        val cachedEntities = cachedAnimeDao.getAllCachedAnimeList()
+        val curated = OfflineAnimeData.getCuratedWeekSchedule(startDate)
+
+        val cachedReleases = if (cachedEntities.isNotEmpty()) {
+            cachedEntities.map { it.toAnimeRelease() }
+        } else {
+            emptyList()
         }
-        Result.success(curated)
+
+        val combinedOffline = mergeReleases(cachedReleases, curated, favEntities, watchedKeys, userRatingsMap)
+        Result.success(combinedOffline)
     }
 
     private fun mergeReleases(
         remote: List<AnimeRelease>,
         curated: List<AnimeRelease>,
         favIds: Set<Int>,
-        watchedKeys: Set<String>
+        watchedKeys: Set<String>,
+        userRatingsMap: Map<Int, Int> = emptyMap()
     ): List<AnimeRelease> {
         val resultMap = LinkedHashMap<Int, AnimeRelease>()
 
@@ -227,7 +262,8 @@ class AnimeRepository(
             val key = "${item.id}_${item.episode}"
             resultMap[item.id] = item.copy(
                 isFavorite = favIds.contains(item.id),
-                isWatched = watchedKeys.contains(key)
+                isWatched = watchedKeys.contains(key),
+                userRating = userRatingsMap[item.id] ?: 0
             )
         }
 
@@ -245,12 +281,14 @@ class AnimeRepository(
                     bannerImageUrl = existing.bannerImageUrl ?: item.bannerImageUrl,
                     streamingPlatform = item.streamingPlatform,
                     isFavorite = favIds.contains(item.id),
-                    isWatched = watchedKeys.contains(key)
+                    isWatched = watchedKeys.contains(key),
+                    userRating = userRatingsMap[item.id] ?: existing.userRating
                 )
             } else {
                 resultMap[item.id] = item.copy(
                     isFavorite = favIds.contains(item.id),
-                    isWatched = watchedKeys.contains(key)
+                    isWatched = watchedKeys.contains(key),
+                    userRating = userRatingsMap[item.id] ?: 0
                 )
             }
         }

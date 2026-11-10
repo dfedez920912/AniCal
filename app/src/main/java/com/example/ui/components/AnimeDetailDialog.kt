@@ -57,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import android.annotation.SuppressLint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -76,6 +77,7 @@ import com.example.ui.theme.AniSecondary
 import java.time.format.TextStyle
 import java.util.Locale
 
+@SuppressLint("NewApi")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AnimeDetailDialog(
@@ -87,6 +89,7 @@ fun AnimeDetailDialog(
     onTestNotification: () -> Unit = {},
     onToggleWatched: () -> Unit = {},
     onToggleWatchlist: () -> Unit = {},
+    onRatingChanged: (rating: Int) -> Unit = {},
     watchedEpisodeKeys: Set<String> = emptySet(),
     onToggleWatchedEpisodeNum: (episodeNumber: Int) -> Unit = {},
     zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault(),
@@ -394,6 +397,102 @@ fun AnimeDetailDialog(
                                 value = anime.format,
                                 modifier = Modifier.weight(1f)
                             )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // User 5-Star Rating Card Component
+                        var currentRating by remember(anime.id, anime.userRating) { mutableStateOf(anime.userRating) }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("user_rating_card"),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = AniGold,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "Tu Calificación",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+
+                                    Text(
+                                        text = if (currentRating > 0) "$currentRating / 5 ★" else "Sin calificar",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (currentRating > 0) AniGold else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                // 5 Interactive Stars
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    (1..5).forEach { starIndex ->
+                                        val isSelected = starIndex <= currentRating
+                                        IconButton(
+                                            onClick = {
+                                                val newRating = if (currentRating == starIndex) 0 else starIndex
+                                                currentRating = newRating
+                                                onRatingChanged(newRating)
+                                            },
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .testTag("star_rating_$starIndex")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = "Calificar $starIndex estrellas",
+                                                tint = if (isSelected) AniGold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                                                modifier = Modifier.size(30.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Text(
+                                    text = when (currentRating) {
+                                        1 -> "1 estrella • Malo"
+                                        2 -> "2 estrellas • Regular"
+                                        3 -> "3 estrellas • Bueno"
+                                        4 -> "4 estrellas • Muy bueno"
+                                        5 -> "5 estrellas • ¡Excelente!"
+                                        else -> "Toca una estrella para calificar este anime"
+                                    },
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))

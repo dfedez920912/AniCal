@@ -431,6 +431,8 @@ fun WatchlistScreen(
             onUpdateReminder = { enabled, minutes -> viewModel.updateReminder(selected.id, enabled, minutes) },
             onTestNotification = { viewModel.testEpisodeNotification(selected) },
             onToggleWatched = { viewModel.toggleWatchedEpisode(selected) },
+            onToggleWatchlist = { viewModel.toggleWatchlist(selected) },
+            onRatingChanged = { rating -> viewModel.setUserRating(selected.id, rating) },
             watchedEpisodeKeys = uiState.watchedEpisodeKeys,
             onToggleWatchedEpisodeNum = { epNum ->
                 viewModel.toggleWatchedEpisodeNum(selected.id, epNum, selected.displayTitle)

@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -67,24 +69,18 @@ jobs:
       - name: Prepare release assets
         env:
           RELEASE_TAG: ${{ github.ref_name }}
-          RELEASE_COMMIT: ${{ github.sha }}
-          REPOSITORY: ${{ github.repository }}
-          SERVER_URL: ${{ github.server_url }}
         run: |
           set -euo pipefail
+
           APK="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK"
+          test -s "release-notes.md" || {
+            echo "The root-level release-notes.md file is missing or empty."
+            exit 1
+          }
+
           cp "$APK" "AniCal-${RELEASE_TAG}.apk"
           sha256sum "AniCal-${RELEASE_TAG}.apk" > "AniCal-${RELEASE_TAG}.apk.sha256"
-          {
-            echo "## AniCal ${RELEASE_TAG}"
-            echo
-            echo "**Commit incluido:** [\`${RELEASE_COMMIT}\`](${SERVER_URL}/${REPOSITORY}/commit/${RELEASE_COMMIT})"
-            echo
-            echo "APK firmado generado automáticamente por GitHub Actions."
-            echo
-            echo "Checksum SHA-256 incluido como archivo adjunto."
-          } > release-notes.md
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

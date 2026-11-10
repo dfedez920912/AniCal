@@ -71,6 +71,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
     private val _rawReleases = MutableStateFlow<List<AnimeRelease>>(emptyList())
     private val _favoriteIds = MutableStateFlow<Set<Int>>(emptySet())
     private val _watchedKeys = MutableStateFlow<Set<String>>(emptySet())
+    private val _userRatings = MutableStateFlow<Map<Int, Int>>(emptyMap())
     private val _selectedDate = MutableStateFlow<LocalDate?>(LocalDate.now())
     private val _searchQuery = MutableStateFlow("")
     private val _selectedGenres = MutableStateFlow<Set<String>>(emptySet())
@@ -106,6 +107,7 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
         val raw: List<AnimeRelease>,
         val favIds: Set<Int>,
         val watchedKeys: Set<String>,
+        val userRatings: Map<Int, Int>,
         val selDate: LocalDate?,
         val query: String,
         val selGenres: Set<String>,
@@ -127,8 +129,8 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     private val filterParamsFlow = combine(
-        combine(_rawReleases, _favoriteIds, _watchedKeys) { raw, favIds, watched ->
-            Triple(raw, favIds, watched)
+        combine(_rawReleases, _favoriteIds, _watchedKeys, _userRatings) { raw, favIds, watched, ratings ->
+            Quad(raw, favIds, watched, ratings)
         },
         _selectedDate,
         _searchQuery,
@@ -142,8 +144,8 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
                 platform = args[4] as com.example.model.StreamingPlatform
             )
         }
-    ) { (raw, favIds, watched), selDate, query, opts ->
-        FilterParams(raw, favIds, watched, selDate, query, opts.genres, opts.sort, opts.cat, opts.favs, opts.platform)
+    ) { (raw, favIds, watched, ratings), selDate, query, opts ->
+        FilterParams(raw, favIds, watched, ratings, selDate, query, opts.genres, opts.sort, opts.cat, opts.favs, opts.platform)
     }
 
     private data class FilterOptions(
@@ -227,15 +229,24 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
         val refreshing = controlParams.refreshing
         val error = controlParams.error
 
+        val userRatings = filterParams.userRatings
+
         val activeZone = if (isJpZone) java.time.ZoneId.of("Asia/Tokyo") else java.time.ZoneId.systemDefault()
         val today = LocalDate.now(activeZone)
 
-        // Sync favorite, watched, and watchlist status with Room database
+        // Sync favorite, watched, watchlist, and user rating status with Room database
         val syncedRaw = raw.map { item ->
             val isFav = favIds.contains(item.id)
             val isW = watchedKeys.contains("${item.id}_${item.episode}")
             val isWatch = watchIds.contains(item.id)
-            item.copy(isFavorite = isFav, isWatched = isW, isInWatchlist = isWatch, hasReminder = isFav)
+            val rating = userRatings[item.id] ?: item.userRating
+            item.copy(
+                isFavorite = isFav,
+                isWatched = isW,
+                isInWatchlist = isWatch,
+                hasReminder = isFav,
+                userRating = rating
+            )
         }
 
         // Build 7-day tabs with counts for premieres and ongoing episodes
@@ -337,7 +348,14 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
             val isFav = favIds.contains(d.id)
             val isW = watchedKeys.contains("${d.id}_${d.episode}")
             val isWatch = watchIds.contains(d.id)
-            d.copy(isFavorite = isFav, isWatched = isW, isInWatchlist = isWatch, hasReminder = isFav)
+            val rating = userRatings[d.id] ?: d.userRating
+            d.copy(
+                isFavorite = isFav,
+                isWatched = isW,
+                isInWatchlist = isWatch,
+                hasReminder = isFav,
+                userRating = rating
+            )
         }
 
         // Filter watchlist items by status and search query
@@ -418,7 +436,29 @@ class AnimeViewModel(application: Application) : AndroidViewModel(application) {
                 _watchlistIds.value = ids
             }
         }
+        viewModelScope.launch {
+            repository.userRatingsFlow.collect { ratings ->
+                _userRatings.value = ratings
+            }
+        }
         loadSchedule()
+    }
+
+    fun setUserRating(animeId: Int, rating: Int) {
+        viewModelScope.launch {
+            val targetRating = rating.coerceIn(0, 5)
+            repository.setUserRating(animeId, targetRating)
+            val current = _userRatings.value.toMutableMap()
+            if (targetRating <= 0) current.remove(animeId) else current[animeId] = targetRating
+            _userRatings.value = current
+            updateAnimeInState(animeId) { it.copy(userRating = targetRating) }
+            val msg = if (targetRating > 0) {
+                "✓ Puntuación de $targetRating ★ guardada en la base de datos."
+            } else {
+                "Puntuación eliminada."
+            }
+            _notificationMessage.value = msg
+        }
     }
 
     fun setNavScreen(screen: MainNavScreen) {
