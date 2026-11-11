@@ -1,6 +1,6 @@
 *.iml
 .gradle
-.kate-swp
+*.kate-swp
 .kotlin
 /local.properties
 /.idea/caches

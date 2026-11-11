@@ -68,7 +68,7 @@ fun SplashScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = "AniCal Logo",
+                        contentDescription = "Logo de AniVexa",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(48.dp)
                     )
@@ -76,7 +76,7 @@ fun SplashScreen(
             }
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "AniCal",
+                text = "AniVexa",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Black,
                 fontSize = 36.sp,

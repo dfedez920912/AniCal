@@ -67,7 +67,7 @@ fun OnboardingScreen(
                 }
 
                 Text(
-                    text = "Bienvenido a AniCal",
+                    text = "Bienvenido a AniVexa",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground

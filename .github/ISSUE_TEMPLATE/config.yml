@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Reportar una vulnerabilidad de seguridad
+    url: https://github.com/dfedez920912/AniVexa/blob/main/SECURITY.md
+    about: Lee la política de seguridad y usa un canal privado; no publiques detalles de vulnerabilidades.
+  - name: Guía para contribuir
+    url: https://github.com/dfedez920912/AniVexa/blob/main/CONTRIBUTING.md
+    about: Revisa el proceso de contribución antes de abrir un pull request.

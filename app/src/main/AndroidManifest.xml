@@ -38,7 +38,7 @@
         <receiver
             android:name="com.example.widget.AnimeListWidgetProvider"
             android:exported="true"
-            android:label="AniCal - Estrenos de Hoy (3x2)">
+            android:label="AniVexa - Estrenos de Hoy (3x2)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -51,7 +51,7 @@
         <receiver
             android:name="com.example.widget.AnimeCountWidgetProvider"
             android:exported="true"
-            android:label="AniCal - Contador de Estrenos (1x1)">
+            android:label="AniVexa - Contador de Estrenos (1x1)">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
