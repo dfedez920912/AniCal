@@ -10,3 +10,4 @@
 ## Descargas
 
 El APK firmado y su checksum SHA-256 están adjuntos y firmados para este release.
+
