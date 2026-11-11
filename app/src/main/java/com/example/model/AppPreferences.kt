@@ -2,7 +2,7 @@ package com.example.model
 
 enum class AppThemeMode(val label: String, val description: String) {
     SYSTEM("Sistema", "Sigue el tema del dispositivo"),
-    CYBERPUNK("Cyberpunk AniCal", "Púrpura y rosa neón intenso"),
+    CYBERPUNK("Cyberpunk AniVexa", "Púrpura y rosa neón intenso"),
     OLED("OLED Midnight", "Negro puro #000000 para ahorrar batería"),
     SAKURA("Sakura Pastel", "Tonos rosados y primaverales"),
     LIGHT("Claro Elegante", "Fondo blanco puro y limpio")

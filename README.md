@@ -1,6 +1,6 @@
-# AniCal
+# AniVexa
 
-AniCal es una aplicación Android nativa para consultar los estrenos de anime. El proyecto está desarrollado en Kotlin y utiliza Jetpack Compose para la interfaz. Según la descripción del proyecto, muestra un calendario de estrenos diarios y semanales con sinopsis y carátulas. También incluye recordatorios de episodios y un widget de cuenta regresiva para la pantalla de inicio.
+AniVexa es una aplicación Android nativa para consultar los estrenos de anime. El proyecto está desarrollado en Kotlin y utiliza Jetpack Compose para la interfaz. Muestra un calendario de estrenos diarios y semanales con sinopsis y carátulas. También incluye recordatorios de episodios y widgets para la pantalla de inicio.
 
 ## Funcionalidades
 
@@ -14,13 +14,25 @@ AniCal es una aplicación Android nativa para consultar los estrenos de anime. E
 ## Requisitos
 
 - Android Studio con soporte para la versión de Android Gradle Plugin definida en el proyecto.
-- JDK 17 para compilar con Gradle 9.
+- JDK 25, según la versión configurada en `gradle/gradle-daemon-jvm.properties`.
 - Android SDK 36.1 (la configuración declara `compileSdk` 36 con minor API level 1).
 - Android 7.0 (API 24) o posterior para instalar la aplicación (`minSdk = 24`).
 
 ## Versiones y distribución
 
-Las versiones se distribuyen como APK adjunto a una [GitHub Release](https://github.com/dfedez920912/AniCal/releases). Se recomienda etiquetar versiones con el formato `vMAJOR.MINOR.PATCH`, por ejemplo `v1.0.0`, y adjuntar notas de versión y un checksum SHA-256 junto al APK.
+Las versiones se distribuyen como APK adjunto a una [GitHub Release](https://github.com/dfedez920912/AniVexa/releases). Las etiquetas con formato `vMAJOR.MINOR.PATCH` (por ejemplo, `v1.0.0`) activan el flujo de publicación, que ejecuta las pruebas y adjunta el APK firmado junto con su checksum SHA-256.
+
+## Desarrollo
+
+- JDK 25 y Android SDK con la plataforma Android 36.
+- `gradlew.bat testDebugUnitTest` en Windows o `./gradlew testDebugUnitTest` en Linux/macOS para ejecutar las pruebas unitarias.
+- `gradlew.bat assembleDebug` en Windows o `./gradlew assembleDebug` en Linux/macOS para compilar la aplicación.
+
+Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para conocer el proceso de contribución y el [Código de conducta](CODE_OF_CONDUCT.md) para las pautas de participación.
+
+## Seguridad
+
+Consulta [SECURITY.md](SECURITY.md) para reportar vulnerabilidades de forma responsable.
 
 ## Tecnologías
 

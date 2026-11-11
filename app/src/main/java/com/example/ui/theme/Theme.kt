@@ -93,7 +93,7 @@ private val SakuraColorScheme = lightColorScheme(
 )
 
 @Composable
-fun AniCalTheme(
+fun AniVexaTheme(
     themeMode: AppThemeMode = AppThemeMode.CYBERPUNK,
     systemDarkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,

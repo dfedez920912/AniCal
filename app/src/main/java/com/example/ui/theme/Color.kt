@@ -2,7 +2,7 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// AniCal - Anime Calendar Theme Colors
+// AniVexa - Anime Calendar Theme Colors
 val AniPrimary = Color(0xFF7C4DFF)       // Vibrant Purple
 val AniPrimaryVariant = Color(0xFF651FFF)
 val AniSecondary = Color(0xFFFF6584)     // Sakura Coral Accent

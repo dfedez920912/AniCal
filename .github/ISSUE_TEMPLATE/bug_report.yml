@@ -1,0 +1,59 @@
+name: Reportar un error
+description: Informa de un comportamiento incorrecto en AniVexa.
+title: "[Error]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por ayudar a mejorar AniVexa. No incluyas contraseñas, tokens ni datos personales.
+        Para reportar una vulnerabilidad de seguridad, sigue la política de seguridad en https://github.com/dfedez920912/AniVexa/blob/main/SECURITY.md; no la publiques aquí.
+  - type: input
+    id: version
+    attributes:
+      label: Versión de AniVexa
+      description: Indica la versión instalada (por ejemplo, 1.1.3).
+      placeholder: 1.1.3
+    validations:
+      required: true
+  - type: input
+    id: android-version
+    attributes:
+      label: Versión de Android
+      description: Indica la versión de Android del dispositivo.
+      placeholder: Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: Enumera los pasos necesarios para ver el problema.
+      placeholder: |
+        1. Abre…
+        2. Selecciona…
+        3. Observa…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      description: ¿Qué esperabas que ocurriera?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento observado
+      description: ¿Qué ocurrió en realidad? Adjunta capturas si ayudan a explicar el error.
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Información adicional
+      description: Añade contexto relevante, sin incluir secretos ni datos personales.
+    validations:
+      required: false

@@ -17,7 +17,7 @@
         <ImageView
             android:layout_width="16dp"
             android:layout_height="16dp"
-            android:contentDescription="Icono AniCal"
+            android:contentDescription="Icono AniVexa"
             android:src="@drawable/ic_launcher_foreground" />
 
         <TextView
@@ -27,7 +27,7 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:letterSpacing="0.05"
-            android:text="ANICAL • ESTRENOS DE HOY"
+            android:text="ANIVEXA • ESTRENOS DE HOY"
             android:textColor="#A5A3C2"
             android:textSize="10sp"
             android:textStyle="bold" />

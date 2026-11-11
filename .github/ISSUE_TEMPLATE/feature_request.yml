@@ -1,0 +1,34 @@
+name: Proponer una funcionalidad
+description: Sugiere una mejora o una nueva funcionalidad para AniVexa.
+title: "[Propuesta]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o necesidad
+      description: ¿Qué necesidad resolvería esta propuesta?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta
+      description: Describe cómo te gustaría que funcionara.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Has considerado otras soluciones o flujos de trabajo?
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto adicional
+      description: Añade ejemplos, bocetos o referencias útiles.
+    validations:
+      required: false

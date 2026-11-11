@@ -889,7 +889,7 @@ fun AnimeDetailDialog(
                                             action = Intent.ACTION_SEND
                                             putExtra(
                                                 Intent.EXTRA_TEXT,
-                                                "¡El episodio ${anime.episode} de ${anime.displayTitle} estrena el $dayName a las $formattedTime en ${anime.streamingPlatform}!\n\nCalendario de Anime AniCal"
+                                                "¡El episodio ${anime.episode} de ${anime.displayTitle} estrena el $dayName a las $formattedTime en ${anime.streamingPlatform}!\n\nCalendario de Anime AniVexa"
                                             )
                                             type = "text/plain"
                                         }

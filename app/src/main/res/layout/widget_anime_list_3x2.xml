@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="ANICAL • ESTRENOS DE HOY"
+        android:text="ANIVEXA • ESTRENOS DE HOY"
         android:textColor="#A5A3C2"
         android:textSize="11sp"
         android:textStyle="bold"

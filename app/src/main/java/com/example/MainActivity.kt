@@ -20,7 +20,7 @@ import com.example.ui.MainNavScreen
 import com.example.ui.OnboardingScreen
 import com.example.ui.SplashScreen
 import com.example.ui.WatchlistScreen
-import com.example.ui.theme.AniCalTheme
+import com.example.ui.theme.AniVexaTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(prefs.getBoolean("onboarding_completed", false))
             }
 
-            AniCalTheme(themeMode = uiState.value.appThemeMode) {
+            AniVexaTheme(themeMode = uiState.value.appThemeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when {
                         showSplash -> {
