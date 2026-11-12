@@ -8,7 +8,7 @@ class ApiService {
   static final AniVexaBackendEngine _engine = AniVexaBackendEngine.instance;
 
   static Future<void> initialize() async {
-    await _engine.start();
+    await _engine.init();
   }
 
   static Future<List<AiringScheduleItem>> getScheduleToday() async {
