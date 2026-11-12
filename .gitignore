@@ -1,6 +1,5 @@
 *.iml
 .gradle
-*.kate-swp
 .kotlin
 /local.properties
 /.idea/caches
@@ -15,5 +14,7 @@
 .externalNativeBuild
 .cxx
 local.properties
-.env
-debug.keystore
+debug.keystore*
+.build-outputs/
+public/
+*.swp

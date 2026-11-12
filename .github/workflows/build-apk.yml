@@ -1,9 +1,11 @@
-name: Build and publish APK
+name: Build and publish Flutter APK
 
 on:
   push:
     tags:
       - "v*"
+      - "AniVexa*"
+      - "AniVexa v*"
 
 permissions:
   contents: write
@@ -26,45 +28,34 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "25"
+          java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          packages: platform-tools
+          channel: "stable"
+          cache: true
 
-      - name: Install Android SDK packages
-        run: |
-          yes | sdkmanager --licenses
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-36" \
-            "build-tools;36.0.0"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Configure release signing
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      - name: Build Flutter APK
         run: |
           set -euo pipefail
-          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "Required secret ANDROID_KEYSTORE_BASE64 is not configured."
-            exit 1
+
+          TARGET_DIR="."
+          if [ -d "frontend-flutter" ]; then
+            TARGET_DIR="frontend-flutter"
           fi
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload-keystore.jks"
-          echo "KEYSTORE_PATH=$RUNNER_TEMP/upload-keystore.jks" >> "$GITHUB_ENV"
+          echo "Building Flutter project in: $TARGET_DIR"
 
-      - name: Run unit tests and build signed release APK
-        env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          test -n "$STORE_PASSWORD" || { echo "Required secret STORE_PASSWORD is not configured."; exit 1; }
-          test -n "$KEY_PASSWORD" || { echo "Required secret KEY_PASSWORD is not configured."; exit 1; }
-          bash ./gradlew --no-daemon testDebugUnitTest assembleRelease
+          cd "$TARGET_DIR"
+
+          if [ ! -d "android" ]; then
+            echo "Initializing Android platform configuration for Flutter..."
+            flutter create . --platforms=android --org com.aistudio.anivexa
+          fi
+
+          flutter pub get
+          flutter build apk --release
+          cd -
 
       - name: Prepare release assets
         env:
@@ -72,22 +63,28 @@ jobs:
         run: |
           set -euo pipefail
 
-          APK="app/build/outputs/apk/release/app-release.apk"
-          test -s "$APK"
+          APK=$(find . -path "*/flutter-apk/*" -name "*release*.apk" -o -path "*/outputs/apk/*" -name "*release*.apk" | head -n 1)
+          if [ -z "$APK" ] || [ ! -f "$APK" ]; then
+            echo "Error: No release APK found!"
+            exit 1
+          fi
+          echo "Found generated APK: $APK"
+
           test -s "release-notes.md" || {
-            echo "The root-level release-notes.md file is missing or empty."
+            echo "The release-notes.md file is missing or empty."
             exit 1
           }
 
-          cp "$APK" "AniVexa-${RELEASE_TAG}.apk"
-          sha256sum "AniVexa-${RELEASE_TAG}.apk" > "AniVexa-${RELEASE_TAG}.apk.sha256"
+          CLEAN_TAG=$(echo "$RELEASE_TAG" | tr -s ' ' '_')
+          cp "$APK" "AniVexa-${CLEAN_TAG}.apk"
+          sha256sum "AniVexa-${CLEAN_TAG}.apk" > "AniVexa-${CLEAN_TAG}.apk.sha256"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: AniVexa ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           body_path: release-notes.md
           files: |
-            AniVexa-${{ github.ref_name }}.apk
-            AniVexa-${{ github.ref_name }}.apk.sha256
+            AniVexa-*.apk
+            AniVexa-*.apk.sha256

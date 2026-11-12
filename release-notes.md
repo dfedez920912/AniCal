@@ -1,13 +1,43 @@
-## Novedades de la Versión (v1.1.3)
+# AniVexa v0.0.1 - Notas de la versión
 
-- **Corrección de carga del Widget ("Can't load widget")**: Se eliminó el atributo incompatible `selectableItemBackground` del diseño XML del widget (`widget_anime_countdown.xml`), permitiendo una correcta inflación en RemoteViews y mostrando correctamente los estrenos y cuentas regresivas en la pantalla de inicio.
-- **Traducción íntegra de sinopsis**: Se actualizó el servicio de traducción para asegurar que todo el texto de la sinopsis sea traducido completamente al español al pulsar el botón de cambio de idioma.
-- **Reorganización de botones de acción en detalle de anime**: Los botones de Favorito y Watchlist se colocaron en su propia fila superior exclusiva para evitar deformaciones.
-- **Scroll dedicado para progreso de episodios**: Contenedor desplazable de altura máxima (`160.dp`) para animes con 100+ capítulos.
-- **Pantalla de Onboarding y Splash Screen**: Tutorial de bienvenida e inicio animado.
-- **Filtros avanzados colapsables y barra de búsqueda con lupa**: Máximo espacio vertical en la pantalla principal.
+## 🌟 Novedades Destacadas
 
-## Descargas
+### 🔄 Transición a AniVexa y Nuevo Icono Adaptativo
+- **Nueva Identidad**: La aplicación y repositorio pasan a llamarse oficialmente **AniVexa**. Se actualizaron todos los identificadores en la aplicación, configuración de compilación y metadatos del proyecto.
+- **Icono Oficial AniVexa**: Se incorporó el nuevo icono adaptativo con estética cyberpunk, integrando el logotipo de neón cian brillante con la leyenda "AniVexa" y soporte para iconos circulares en todas las densidades de pantalla.
 
-El APK firmado y su checksum SHA-256 están adjuntos y firmados para este release.
+---
 
+### ⚡ Backend Centralizado en Rust (`backend-rust/`)
+- **Centralización de la API de AniList**: Se sustituyeron las consultas directas en el cliente por un backend centralizado desarrollado en **Rust** (Axum + Tokio), implementado bajo las especificaciones de `api.md`.
+- **Endpoints de Alto Rendimiento**:
+  - `GET /api/season`: Estrenos de temporada con caché en memoria de 6 horas.
+  - `GET /api/schedule`: Calendario de emisiones ordenado por timestamps Unix con caché de 30 minutos.
+  - `GET /api/airing/today`, `GET /api/airing/week`, `GET /api/airing/month`: Filtros rápidos para el día, la semana y el mes actual.
+  - `GET /api/anime/:id`: Ficha de detalle completa y reseñas destacadas con caché de 24 horas.
+  - `GET /api/search`: Búsqueda instantánea de títulos de anime.
+- **Protección contra Rate Limits**: Control de cuotas de peticiones (429 y cabecera `Retry-After`) y filtrado automático de contenido adulto (`isAdult: false`).
+
+---
+
+### 📱 Nuevo Frontend en Flutter (`frontend-flutter/`)
+- **Experiencia Fluida y Animaciones**: Se creó la base completa de la aplicación en **Flutter** con animaciones fluidas (`AnimatedSwitcher`, transiciones dinámicas entre pestañas y tarjetas).
+- **Modelos y Servicios**: Modelos fuertemente tipados (`AnimeItem`, `AiringScheduleItem`) y servicio HTTP configurado para consultar directamente el backend en Rust.
+- **Módulos**: Calendario de emisión, vistas diaria y semanal, y gestión de lista de seguimiento (*Watchlist*).
+
+---
+
+### 🎨 Experiencia de Usuario y Nuevas Pantallas
+- **Splash Screen**: Pantalla de presentación con animación de entrada e icono de AniVexa.
+- **Onboarding Interactivo**: Pantalla de bienvenida que guía al usuario por las principales funciones de la app (guardado en preferencias locales).
+- **Widgets de Inicio**:
+  - Widget contador 1x1 con los estrenos pendientes del día.
+  - Widget de lista desplazable 3x2 con los animes de hoy.
+  - Widget de cuenta regresiva para el próximo episodio.
+- **Caché sin Conexión con Room**: Respaldo automático en base de datos local para consultar detalles y la lista de favoritos incluso sin conexión a internet.
+
+---
+
+## 📦 Descargas
+
+El paquete APK generado por el workflow de GitHub Actions se encuentra disponible en los recursos adjuntos de este release.

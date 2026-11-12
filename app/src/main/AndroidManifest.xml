@@ -65,6 +65,19 @@
             android:name="com.example.widget.AnimeListWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
+
+        <!-- Home Screen Anime Countdown Widget -->
+        <receiver
+            android:name="com.example.widget.AnimeCountdownWidget"
+            android:exported="true"
+            android:label="AniVexa - Próximo Estreno">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/anime_countdown_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

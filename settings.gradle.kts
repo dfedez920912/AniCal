@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "AniVexa"
+rootProject.name = "AniCal"
 
 include(":app")

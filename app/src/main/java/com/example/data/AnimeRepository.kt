@@ -220,7 +220,7 @@ class AnimeRepository(
         val userRatingsMap = userRatingDao.getAllRatingsList().associate { it.animeId to it.rating }
 
         try {
-            val remoteReleases = fetchFromAniList(startEpoch, endEpoch, favEntities, watchedKeys)
+            val remoteReleases = fetchFromBackend(startEpoch, endEpoch, favEntities, watchedKeys)
             if (remoteReleases.isNotEmpty()) {
                 // Save to Room cache for offline access
                 cachedAnimeDao.insertAll(remoteReleases.map { com.example.data.local.CachedAnimeEntity.fromAnimeRelease(it) })
@@ -232,7 +232,7 @@ class AnimeRepository(
                 return@withContext Result.success(combined)
             }
         } catch (e: Exception) {
-            Log.w("AnimeRepository", "AniList API fetch failed (offline or network error), attempting Room cache fallback: ${e.message}")
+            Log.w("AnimeRepository", "Backend service fetch failed (offline or network error), attempting Room cache fallback: ${e.message}")
         }
 
         // Offline / Cache fallback
@@ -296,7 +296,50 @@ class AnimeRepository(
         return resultMap.values.sortedBy { it.airingAtSeconds }
     }
 
-    private fun fetchFromAniList(
+    /**
+     * Centralized query to AniVexa Rust Backend (/api/schedule) per api.md specification.
+     * Centralizes rate limiting, caching, and GraphQL complexity in the Rust service.
+     */
+    private fun fetchFromBackend(
+        startEpoch: Long,
+        endEpoch: Long,
+        favIds: Set<Int>,
+        watchedKeys: Set<String>
+    ): List<AnimeRelease> {
+        // Primary: Centralized Rust Backend on localhost or emulator host 10.0.2.2:8080
+        val backendUrls = listOf(
+            "http://10.0.2.2:8080/api/schedule?from=$startEpoch&to=$endEpoch&page=1&per_page=50",
+            "http://localhost:8080/api/schedule?from=$startEpoch&to=$endEpoch&page=1&per_page=50"
+        )
+
+        for (url in backendUrls) {
+            try {
+                val request = Request.Builder()
+                    .url(url)
+                    .header("Accept", "application/json")
+                    .get()
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val bodyString = response.body?.string() ?: continue
+                    val json = JSONObject(bodyString)
+                    val schedulesArray = json.optJSONObject("Page")?.optJSONArray("airingSchedules")
+                        ?: json.optJSONObject("data")?.optJSONObject("Page")?.optJSONArray("airingSchedules")
+                    if (schedulesArray != null) {
+                        return parseSchedulesArray(schedulesArray, favIds, watchedKeys)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d("AnimeRepository", "Backend endpoint $url not reachable, trying next: ${e.message}")
+            }
+        }
+
+        // Secondary fallback to AniList proxy if backend server is not active
+        return fetchFromAniListDirect(startEpoch, endEpoch, favIds, watchedKeys)
+    }
+
+    private fun fetchFromAniListDirect(
         startEpoch: Long,
         endEpoch: Long,
         favIds: Set<Int>,
@@ -362,6 +405,15 @@ class AnimeRepository(
         val dataObj = json.optJSONObject("data") ?: return emptyList()
         val pageObj = dataObj.optJSONObject("Page") ?: return emptyList()
         val schedulesArray = pageObj.optJSONArray("airingSchedules") ?: return emptyList()
+
+        return parseSchedulesArray(schedulesArray, favIds, watchedKeys)
+    }
+
+    private fun parseSchedulesArray(
+        schedulesArray: org.json.JSONArray,
+        favIds: Set<Int>,
+        watchedKeys: Set<String>
+    ): List<AnimeRelease> {
 
         val list = mutableListOf<AnimeRelease>()
         for (i in 0 until schedulesArray.length()) {
