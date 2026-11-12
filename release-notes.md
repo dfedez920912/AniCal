@@ -38,6 +38,14 @@
 
 ---
 
+### 🛠️ Correcciones y Mejoras
+- **Icono Oficial en Flutter**: Se incluyeron todos los recursos del icono adaptativo oficial de AniVexa en la estructura de Android de Flutter, resolviendo el problema donde se mostraba el icono genérico de Flutter.
+- **Permisos de Red y Tráfico**: Se agregaron explícitamente los permisos `android.permission.INTERNET`, `ACCESS_NETWORK_STATE` y `usesCleartextTraffic="true"` en el `AndroidManifest.xml` de Flutter para evitar excepciones `Operation not permitted (errno 1)`.
+- **Conectividad con Respaldo Inteligente**: Se implementó tolerancia a fallos en `ApiService`: si el servidor backend local en Rust no está encendido o la dirección local no es alcanzable desde el dispositivo, la app consulta directamente la API pública de AniList o utiliza los datos fuera de línea sin mostrar pantallas de error.
+- **Selector de Servidor en Ajustes**: Se añadió un diálogo en la barra superior para configurar la IP o URL del backend de forma interactiva.
+
+---
+
 ## 📦 Descargas
 
 El paquete APK generado por el workflow de GitHub Actions se encuentra disponible en los recursos adjuntos de este release.

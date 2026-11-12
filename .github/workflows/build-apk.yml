@@ -48,9 +48,29 @@ jobs:
 
           cd "$TARGET_DIR"
 
-          if [ ! -d "android" ]; then
+          if [ ! -d "android/app/src/main" ]; then
             echo "Initializing Android platform configuration for Flutter..."
             flutter create . --platforms=android --org com.aistudio.anivexa
+          fi
+
+          # Ensure AniVexa custom launcher icons are applied in all densities
+          echo "Applying AniVexa launcher icons..."
+          mkdir -p android/app/src/main/res
+          if [ -d "../app/src/main/res" ]; then
+            cp -r ../app/src/main/res/mipmap* android/app/src/main/res/
+            cp -r ../app/src/main/res/drawable android/app/src/main/res/
+          fi
+
+          # Ensure INTERNET permission and cleartext traffic are present in AndroidManifest.xml
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+              sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET"\/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"\/>' "$MANIFEST"
+            fi
+            if ! grep -q "usesCleartextTraffic" "$MANIFEST"; then
+              sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
+            fi
+            sed -i 's/android:icon="@mipmap\/[a-zA-Z0-9_]*"/android:icon="@mipmap\/ic_launcher" android:roundIcon="@mipmap\/ic_launcher_round"/' "$MANIFEST" || true
           fi
 
           flutter pub get

@@ -139,6 +139,69 @@ class _ScheduleViewState extends State<ScheduleView> {
     }
   }
 
+  void _showBackendDialog() async {
+    final currentUrl = await ApiService.getBackendUrl();
+    final controller = TextEditingController(text: currentUrl);
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E222D),
+        title: const Text('Configuración Backend Rust', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Dirección del servicio backend AniVexa:',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF161922),
+                hintText: 'http://10.0.2.2:8080 o IP pública',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C4DFF).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Nota: Si el backend local no está encendido o no responde, AniVexa se conecta automáticamente a AniList para que la app siempre funcione.',
+                style: TextStyle(fontSize: 12, color: Colors.white70),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newUrl = controller.text.trim();
+              if (newUrl.isNotEmpty) {
+                await ApiService.setBackendUrl(newUrl);
+                Navigator.of(ctx).pop();
+                _loadData();
+              }
+            },
+            child: const Text('Guardar y Recargar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,6 +223,18 @@ class _ScheduleViewState extends State<ScheduleView> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.dns_outlined, color: Colors.white70),
+            tooltip: 'Configurar Backend Rust',
+            onPressed: () => _showBackendDialog(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white70),
+            tooltip: 'Recargar',
+            onPressed: _loadData,
+          ),
+        ],
         backgroundColor: const Color(0xFF0F1117),
         elevation: 0,
       ),
