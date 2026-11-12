@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'models/anime.dart';
 import 'services/api_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.initialize();
   runApp(const AniVexaApp());
 }
 
@@ -139,63 +141,43 @@ class _ScheduleViewState extends State<ScheduleView> {
     }
   }
 
-  void _showBackendDialog() async {
-    final currentUrl = await ApiService.getBackendUrl();
-    final controller = TextEditingController(text: currentUrl);
-
-    if (!mounted) return;
+  void _showBackendDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E222D),
-        title: const Text('Configuración Backend Rust', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Núcleo Backend AniVexa', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Dirección del servicio backend AniVexa:',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFF161922),
-                hintText: 'http://10.0.2.2:8080 o IP pública',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
+            Row(
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(color: Colors.greenAccent, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                const Text('Motor Interno Activo', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+              ],
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7C4DFF).withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Nota: Si el backend local no está encendido o no responde, AniVexa se conecta automáticamente a AniList para que la app siempre funcione.',
-                style: TextStyle(fontSize: 12, color: Colors.white70),
-              ),
+            const Text(
+              'El backend de AniVexa corre como núcleo interno dentro de la misma aplicación:',
+              style: TextStyle(fontSize: 13, color: Colors.white70),
             ),
+            const SizedBox(height: 8),
+            const Text('• Centraliza todas las peticiones a AniList según api.md', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const Text('• Caché en memoria inteligente (6h temporadas, 30m horarios)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const Text('• Protección contra Rate Limit de AniList', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const Text('• Funciona 100% autónomo sin necesidad de servidores externos', style: TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
-          ),
           ElevatedButton(
-            onPressed: () async {
-              final newUrl = controller.text.trim();
-              if (newUrl.isNotEmpty) {
-                await ApiService.setBackendUrl(newUrl);
-                Navigator.of(ctx).pop();
-                _loadData();
-              }
-            },
-            child: const Text('Guardar y Recargar'),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Entendido'),
           ),
         ],
       ),

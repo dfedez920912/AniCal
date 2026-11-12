@@ -1,20 +1,37 @@
-# AniVexa - Frontend Flutter
+# AniVexa - Frontend Flutter & In-App Core Backend
 
-Frontend móvil multiplataforma desarrollado en **Flutter** para **AniVexa**, con animaciones fluidas, tema oscuro Cyberpunk, y conexión directa al backend centralizado en Rust.
+Aplicación móvil multiplataforma desarrollada en **Flutter** para **AniVexa**, con animaciones fluidas, tema oscuro Cyberpunk, y un **núcleo backend embebido** (`lib/backend/anivexa_backend_engine.dart`) que corre directamente dentro del proceso de la aplicación.
 
-## Estructura del Proyecto
+## Arquitectura del Núcleo Embebido
 
-- `lib/main.dart`: Interfaz principal con pestañas animadas (`AnimatedSwitcher`), vista de calendario diario/semanal y lista de seguimiento.
-- `lib/models/anime.dart`: Modelos de datos (`AnimeItem`, `AiringScheduleItem`).
-- `lib/services/api_service.dart`: Cliente HTTP que consume los endpoints centralizados del backend en Rust (`/api/airing/today`, `/api/airing/week`, `/api/season`, `/api/anime/:id`, `/api/search`).
+El backend no requiere de un servidor externo en otra máquina para funcionar en el móvil:
+- **Motor Interno (`lib/backend/anivexa_backend_engine.dart`)**:
+  - Centraliza todas las peticiones a la API GraphQL de AniList siguiendo `api.md`.
+  - Sistema de **caché inteligente en memoria**:
+    - Temporadas: 6 horas.
+    - Horarios y estrenos diarios/semanales: 30 minutos.
+    - Ficha de detalles y reseñas: 24 horas.
+    - Búsqueda: 1 hora.
+  - **Control de Cuota (Rate Limit)**: Respeta los límites de AniList (30-90 req/min) y gestiona respuestas 429 con `Retry-After`.
+  - **Filtro Seguro**: Excluye automáticamente contenido adulto (`isAdult: false`).
+  - **Servidor Loopback Opcional**: Inicia un demonio HTTP interno en `127.0.0.1` dentro del mismo teléfono.
 
-## Instrucciones para Ejecutar en Flutter
+## Estructura de Archivos
 
-1. Asegúrate de tener Flutter SDK instalado en tu máquina (`flutter --version`).
-2. Asegúrate de que el backend en Rust esté corriendo (`cargo run` en `backend-rust/`).
-3. Instala las dependencias y ejecuta la app:
+- `lib/backend/anivexa_backend_engine.dart`: Motor central de red, caché y normalización.
+- `lib/services/api_service.dart`: Fachada de servicios consumida por la interfaz.
+- `lib/models/anime.dart`: Modelos fuertemente tipados.
+- `lib/main.dart`: Interfaz moderna con animaciones y pestañas.
+- `android/`: Configuración nativa de Android con permisos de red y el icono oficial adaptativo de AniVexa.
+
+## Compilación y Ejecución
+
 ```bash
 cd frontend-flutter
 flutter pub get
 flutter run
+```
+O compila el APK de release directamente:
+```bash
+flutter build apk --release
 ```

@@ -8,15 +8,14 @@
 
 ---
 
-### ⚡ Backend Centralizado en Rust (`backend-rust/`)
-- **Centralización de la API de AniList**: Se sustituyeron las consultas directas en el cliente por un backend centralizado desarrollado en **Rust** (Axum + Tokio), implementado bajo las especificaciones de `api.md`.
-- **Endpoints de Alto Rendimiento**:
-  - `GET /api/season`: Estrenos de temporada con caché en memoria de 6 horas.
-  - `GET /api/schedule`: Calendario de emisiones ordenado por timestamps Unix con caché de 30 minutos.
-  - `GET /api/airing/today`, `GET /api/airing/week`, `GET /api/airing/month`: Filtros rápidos para el día, la semana y el mes actual.
-  - `GET /api/anime/:id`: Ficha de detalle completa y reseñas destacadas con caché de 24 horas.
-  - `GET /api/search`: Búsqueda instantánea de títulos de anime.
-- **Protección contra Rate Limits**: Control de cuotas de peticiones (429 y cabecera `Retry-After`) y filtrado automático de contenido adulto (`isAdult: false`).
+### ⚡ Núcleo Backend Centralizado Embebido (In-App Core)
+- **Motor Interno en la Aplicación**: El backend corre directamente dentro del proceso de la misma aplicación como núcleo central de red. No requiere ningún servidor externo ni configuración de IP para funcionar en el teléfono móvil del usuario.
+- **Centralización y Cumplimiento de `api.md`**:
+  - Centraliza todas las consultas a la API GraphQL de AniList (`https://graphql.anilist.co`).
+  - **Caché en memoria**: 6 horas para temporadas, 30 minutos para horarios y 24 horas para fichas de detalles y reseñas.
+  - **Control de Cuota (Rate Limit)**: Protección contra bloqueos 429 respetando los límites de 30-90 req/min de AniList.
+  - **Filtro Seguro**: Exclusión automática de contenido para adultos (`isAdult: false`).
+- **Backend Standalone en Rust (`backend-rust/`)**: Se incluye adicionalmente el servidor completo en Rust (Axum + Tokio) con los mismos endpoints para despliegues independientes en servidor o contenedores Docker.
 
 ---
 
